@@ -107,7 +107,7 @@ let state = {
 // ==========================================
 
 let memberListContainer, btnAddMember, btnBatchAdd, btnResetMembers, checkAllMembers;
-let totalCountEl, activeCountEl, presetSelect, btnLoadPreset, btnToggleDelete, btnCancelDelete;
+let totalCountEl, activeCountEl, presetSelect, btnLoadPreset, btnToggleDelete, btnCancelDelete, btnRestartDraw;
 let btnStartDraw, btnAutoDraw, resultsPanel, resultsDrawOrderBody, resultsQuestionOrderBody;
 let auditLogText, btnCopyLog, btnDownloadLog;
 let ballContainer, gachaMachine, gachaLever, capsuleModal, capsuleDrawNumber, capsuleDrawName;
@@ -120,6 +120,7 @@ function init() {
   btnBatchAdd = document.getElementById('btn-batch-add');
   btnToggleDelete = document.getElementById('btn-toggle-delete');
   btnCancelDelete = document.getElementById('btn-cancel-delete');
+  btnRestartDraw = document.getElementById('btn-restart-draw');
   btnResetMembers = document.getElementById('btn-reset-members');
   checkAllMembers = document.getElementById('check-all-members');
   totalCountEl = document.getElementById('total-count');
@@ -227,9 +228,11 @@ function renderMembers() {
     presetSelect.disabled = true;
     btnToggleDelete.disabled = true;
     btnCancelDelete.classList.add('hidden');
+    btnRestartDraw.disabled = true; // 2回目の抽選中は操作途中リセットを一旦無効化（誤操作防止のため。終了時はOK）
   } else {
     checkAllMembers.disabled = false;
     btnToggleDelete.disabled = false;
+    btnRestartDraw.disabled = false;
 
     if (state.isDeleteMode) {
       btnCancelDelete.classList.remove('hidden');
@@ -238,6 +241,7 @@ function renderMembers() {
       btnResetMembers.disabled = true;
       btnLoadPreset.disabled = true;
       presetSelect.disabled = true;
+      btnRestartDraw.disabled = true;
     } else {
       btnCancelDelete.classList.add('hidden');
       btnAddMember.disabled = false;
@@ -245,6 +249,7 @@ function renderMembers() {
       btnResetMembers.disabled = false;
       btnLoadPreset.disabled = false;
       presetSelect.disabled = false;
+      btnRestartDraw.disabled = false;
     }
   }
 }
@@ -411,21 +416,39 @@ function setupEventListeners() {
     }
   });
 
+  // 抽選のみを最初からやり直す（途中リセット）
+  btnRestartDraw.addEventListener('click', () => {
+    if (confirm('現在の抽選結果をすべて破棄し、1回目の「くじを引く順の決定」からやり直しますか？\n（議員名簿データは削除されません）')) {
+      state.currentPhase = 1;
+      state.drawOrder = [];
+      state.finalResults = [];
+      state.currentDrawIndex = 0;
+      resultsPanel.classList.add('hidden');
+      renderMembers();
+      setupGachaBalls();
+      updatePhaseUI();
+    }
+  });
+
+  // 議員初期化（名簿の完全削除・初期化）
   btnResetMembers.addEventListener('click', () => {
-    if (state.currentPhase === 2) return;
     if (state.isDeleteMode) {
       state.isDeleteMode = false;
       btnToggleDelete.textContent = '議員を削除する';
       btnToggleDelete.classList.remove('btn-danger-active');
     }
-    if (confirm('議員名簿をデフォルトにリセットしますか？')) {
-      state.members = JSON.parse(JSON.stringify(DEFAULT_MEMBERS));
-      saveState();
-      renderMembers();
-      setupGachaBalls();
-      resultsPanel.classList.add('hidden');
-      state.currentPhase = 1;
-      updatePhaseUI();
+    
+    // 名簿が消えるという強い警告を表示
+    if (confirm('【警告】登録されている議員名簿データを「すべて消去」し、初期状態（与那国町議会10名）に戻します。\n本当によろしいですか？')) {
+      if (confirm('本当によろしいですね？名簿の編集内容は完全に失われます。')) {
+        state.members = JSON.parse(JSON.stringify(DEFAULT_MEMBERS));
+        saveState();
+        renderMembers();
+        setupGachaBalls();
+        resultsPanel.classList.add('hidden');
+        state.currentPhase = 1;
+        updatePhaseUI();
+      }
     }
   });
 
