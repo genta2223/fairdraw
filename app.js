@@ -481,6 +481,7 @@ function setupEventListeners() {
       const parsedMembers = [];
       let duplicateSeats = [];
       let seatsUsed = [];
+      let isFirstLine = true;
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -496,6 +497,17 @@ function setupEventListeners() {
         const name = columns[1].trim();
 
         if (name === '') continue;
+
+        // ヘッダー行の自動判別とスキップ
+        if (isFirstLine) {
+          isFirstLine = false;
+          const isNum = !isNaN(parseInt(seatRaw, 10));
+          const isEmpty = seatRaw === '';
+          // 最初の行であり、1列目が空でも数字でもない場合（例: "議席番号"、"seat" など）、ヘッダーと見なしてスキップ
+          if (!isNum && !isEmpty) {
+            continue;
+          }
+        }
 
         let seat = parseInt(seatRaw, 10);
         if (isNaN(seat)) {
