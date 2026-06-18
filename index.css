@@ -36,9 +36,11 @@
 
 html, body {
   width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden; /* 完全に横スクロールを抑え込む */
+  max-width: 100%;
+  overflow-x: hidden; /* 完全に横スクロールをシャットアウト */
   position: relative;
+  margin: 0;
+  padding: 0;
 }
 
 body {
@@ -55,12 +57,13 @@ body {
 /* App Container Layout */
 .app-container {
   width: 100%;
-  max-width: 100%; /* ビューポート幅を超えないようにする */
+  max-width: 100%; /* 横はみ出しを確実に防止 */
   padding: 1rem 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   box-sizing: border-box;
+  overflow: hidden; /* 子要素のはみ出しをカット */
 }
 
 @media (min-width: 768px) {
@@ -141,6 +144,8 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.5rem;
+  width: 100%;
+  max-width: 100%;
 }
 
 @media (min-width: 900px) {
@@ -159,12 +164,16 @@ body {
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
-  padding: 1.5rem;
+  padding: 1.25rem 1rem; /* スマホ向けにパディングを若干縮小 */
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   transition: var(--transition-smooth);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden; /* 内部パーツのはみ出しを確実に防止 */
 }
 
 .section:hover {
@@ -261,6 +270,9 @@ body {
   font-size: 0.9rem;
   color: var(--text-muted);
   flex-wrap: wrap;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .preset-row label {
@@ -279,6 +291,7 @@ body {
   cursor: pointer;
   transition: var(--transition-smooth);
   min-height: 40px;
+  max-width: 100%;
 }
 
 .select-preset:focus {
@@ -289,13 +302,17 @@ body {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 @media (max-width: 480px) {
   .control-row > button,
   .preset-row > select,
   .preset-row > button {
-    flex: 1 1 40%; /* スマホ画面幅に合わせたフレックス均等配置 */
+    flex: 1 1 auto; /* スマホ画面幅に合わせたフレックス自動均等配置 */
+    min-width: 110px; /* あまりに小さくなりすぎるのを防止 */
   }
 }
 
