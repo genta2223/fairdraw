@@ -905,7 +905,8 @@ function setupEventListeners() {
     textContent += `----------------------------\n`;
     textContent += `※本データは公平な順番決定システム(fairdraw)によって暗号学的に生成されました。\n`;
 
-    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([bom, textContent], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -925,7 +926,8 @@ function setupEventListeners() {
 
   btnDownloadLog.addEventListener('click', () => {
     const logBox = document.getElementById('audit-log-text');
-    const blob = new Blob([logBox.textContent], { type: 'application/json' });
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([bom, logBox.textContent], { type: 'application/json;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
