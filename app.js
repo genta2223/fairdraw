@@ -678,11 +678,11 @@ function setupEventListeners() {
         state.phase2Index = 0;
         state.finalResults = [];
 
-        state.currentPhase = 2;
+        state.currentPhase = 2; // 確実にフェーズを2にする
         
         setupGachaBalls();
         renderMembers();
-        updatePhaseUI();
+        updatePhaseUI(); // UIテキストやテーマクラスの切り替え
         return;
       }
 
@@ -717,7 +717,8 @@ function setupEventListeners() {
       renderDrawOrderTable();
       setupGachaBalls();
 
-      state.phase1Index++;
+      state.phase1Index++; // ここでインデックスをインクリメント
+      
       btnStartDraw.disabled = false;
       btnAutoDraw.disabled = false;
       updatePhaseUI();
@@ -729,13 +730,11 @@ function setupEventListeners() {
       // 【フェーズ 2】 一般質問順決定（本番）
       // ==========================================
       
-      // 移行処理: まだ2回目が始まっていない場合
+      // 移行初期化（万が一変数初期化が抜けていた場合のセーフガード）
       if (state.phase2Pool.length === 0 && state.finalResults.length === 0) {
-        // 1回目の「結果の番手」の昇順に並び替え、2回目で「くじを引く順番」のリストを作る
         const sorted = [...state.phase1Results].sort((a, b) => a.drawRank - b.drawRank);
         state.drawOrder = sorted.map(r => r.name);
         
-        // 2回目の「質問順カード（1番〜N番）」のプールをシャッフル
         const originalPool = Array.from({ length: activeMembers.length }, (_, idx) => idx + 1);
         const poolShuffle = fairShuffle(originalPool);
         state.phase2Pool = poolShuffle.shuffled;
@@ -743,10 +742,6 @@ function setupEventListeners() {
         
         state.phase2Index = 0;
         state.finalResults = [];
-        
-        setupGachaBalls();
-        updatePhaseUI();
-        return;
       }
 
       // 全員引き終わっている場合、リセット
