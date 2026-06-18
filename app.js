@@ -112,7 +112,7 @@ let state = {
 
 let memberListContainer, btnAddMember, btnBatchAdd, btnResetMembers, checkAllMembers;
 let totalCountEl, activeCountEl, presetSelect, btnLoadPreset, btnToggleDelete, btnCancelDelete, btnRestartDraw;
-let btnStartDraw, btnAutoDraw, resultsPanel, resultsDrawOrderBody, resultsQuestionOrderBody;
+let btnStartDraw, btnAutoDraw, btnSaveResults, resultsPanel, resultsDrawOrderBody, resultsQuestionOrderBody;
 let auditLogText, btnCopyLog, btnDownloadLog;
 let ballContainer, gachaMachine, gachaLever, capsuleModal, capsuleDrawNumber, capsuleDrawName;
 let phaseStatus, lotteryArena, leverInstructionText;
@@ -134,6 +134,7 @@ function init() {
 
   btnStartDraw = document.getElementById('btn-start-draw');
   btnAutoDraw = document.getElementById('btn-auto-draw');
+  btnSaveResults = document.getElementById('btn-save-results');
   resultsPanel = document.getElementById('results-panel');
   resultsDrawOrderBody = document.getElementById('results-draw-order-body');
   resultsQuestionOrderBody = document.getElementById('results-question-order-body');
@@ -364,6 +365,7 @@ function updatePhaseUI() {
       btnStartDraw.className = 'btn btn-secondary btn-lg';
       btnAutoDraw.classList.add('hidden');
     }
+    btnSaveResults.classList.add('hidden');
   } else {
     phaseStatus.className = 'phase-status-bar phase-2-active';
     lotteryArena.classList.add('phase-2-theme');
@@ -374,11 +376,13 @@ function updatePhaseUI() {
       btnStartDraw.textContent = `【${state.phase2Index + 1}番手】${nextMember} 議員が質問順を引く`;
       btnStartDraw.className = 'btn btn-primary btn-lg btn-glow';
       btnAutoDraw.classList.remove('hidden');
+      btnSaveResults.classList.add('hidden');
     } else {
       leverInstructionText.textContent = 'すべての一般質問順序が決定しました！';
-      btnStartDraw.textContent = '抽選完了 (最初からやり直す)';
+      btnStartDraw.textContent = '最初からやり直す';
       btnStartDraw.className = 'btn btn-secondary btn-lg';
       btnAutoDraw.classList.add('hidden');
+      btnSaveResults.classList.remove('hidden'); // 保存ボタンを表示
     }
   }
 }
@@ -717,13 +721,13 @@ function setupEventListeners() {
       renderDrawOrderTable();
       setupGachaBalls();
 
-      state.phase1Index++; // ここでインデックスをインクリメント
+      state.phase1Index++;
       
       btnStartDraw.disabled = false;
       btnAutoDraw.disabled = false;
       updatePhaseUI();
       
-      resultsPanel.classList.remove('hidden');
+      resultsPanel.classList.remove('hidden'); // ここで即座に非表示解除
       showAuditLogs(); // 1回目手動ステップ後にリアルタイム出力
 
     } else if (state.currentPhase === 2) {
@@ -873,6 +877,33 @@ function setupEventListeners() {
 
   capsuleModal.addEventListener('click', (e) => {
     e.stopPropagation();
+  });
+
+  btnSaveResults.addEventListener('click', () => {
+    if (state.finalResults.length === 0) return;
+    
+    // 質問順の昇順ソートでテキストファイル化
+    const sorted = [...state.finalResults].sort((a, b) => a.questionRank - b.questionRank);
+    const dateStr = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    
+    let textContent = `【一般質問 順序決定結果一覧】\n`;
+    textContent += `作成日時: ${dateStr}\n`;
+    textContent += `----------------------------\n`;
+    sorted.forEach(item => {
+      textContent += `${item.questionRank}番： ${item.name} 議員\n`;
+    });
+    textContent += `----------------------------\n`;
+    textContent += `※本データは公平な順番決定システム(fairdraw)によって暗号学的に生成されました。\n`;
+
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `一般質問順序決定結果-${new Date().toISOString().slice(0,10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   });
 
   btnCopyLog.addEventListener('click', () => {
