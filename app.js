@@ -409,7 +409,16 @@ function setupEventListeners() {
       return;
     }
 
-    const defaultSeat = state.members.length + 1;
+    // 空いている最も若い議席番号（欠番）を自動検出
+    const assignedSeats = state.members
+      .map(m => parseInt(m.seat, 10))
+      .filter(s => !isNaN(s) && s > 0);
+    
+    let defaultSeat = 1;
+    while (assignedSeats.includes(defaultSeat)) {
+      defaultSeat++;
+    }
+
     const seatInput = prompt('議席番号を入力してください (半角数字):', defaultSeat);
     if (seatInput === null) return;
     const seatVal = parseInt(seatInput, 10) || null;
