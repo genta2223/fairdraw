@@ -793,6 +793,11 @@ function setupEventListeners() {
       btnAutoDraw.disabled = false;
       updatePhaseUI();
       showAuditLogs(); // 2回目手動ステップ後にリアルタイム出力
+
+      // 最後の人が引き終わった場合
+      if (state.phase2Index >= state.drawOrder.length) {
+        btnSaveResults.classList.remove('hidden');
+      }
     }
   };
 
@@ -865,6 +870,7 @@ function setupEventListeners() {
         updatePhaseUI();
         showAuditLogs(); // 2回目自動処理中にリアルタイム出力
       }
+      btnSaveResults.classList.remove('hidden'); // 自動引き完了時も保存ボタンを表示
     }
 
     btnStartDraw.disabled = false;
