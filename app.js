@@ -173,7 +173,18 @@ function loadState() {
     state.members = [...DEFAULT_MEMBERS];
   }
   
+  // 議席番号で名簿をソート (空白は最後尾)
+  sortMembersBySeat();
   resetLotteryState();
+}
+
+// 議席番号で名簿を昇順ソートするヘルパー (空白は最後尾)
+function sortMembersBySeat() {
+  state.members.sort((a, b) => {
+    const aSeat = a.seat !== null && a.seat !== undefined && a.seat !== '' ? parseInt(a.seat, 10) : Infinity;
+    const bSeat = b.seat !== null && b.seat !== undefined && b.seat !== '' ? parseInt(b.seat, 10) : Infinity;
+    return aSeat - bSeat;
+  });
 }
 
 function resetLotteryState() {
@@ -196,6 +207,8 @@ function resetLotteryState() {
 }
 
 function saveState() {
+  // 保存する前に議席順にソートする
+  sortMembersBySeat();
   localStorage.setItem('fairdraw_state', JSON.stringify({
     members: state.members
   }));
@@ -440,6 +453,7 @@ function setupEventListeners() {
           name: m.name,
           active: m.active
         }));
+        sortMembersBySeat(); // ソート
         saveState();
         resetLotteryState();
         renderMembers();
@@ -460,6 +474,7 @@ function setupEventListeners() {
     if (confirm('【警告】登録されている議員名簿データを「すべて消去」し、初期状態（与那国町議会10名）に戻します。\n本当によろしいですか？')) {
       if (confirm('本当によろしいですね？名簿の編集内容は完全に失われます。')) {
         state.members = JSON.parse(JSON.stringify(DEFAULT_MEMBERS));
+        sortMembersBySeat(); // ソート
         saveState();
         resetLotteryState();
         renderMembers();
@@ -493,6 +508,7 @@ function setupEventListeners() {
 
       if (confirm(`本当に以下の議員を名簿から削除しますか？\n\n・${deleteNames.join('\n・')}`)) {
         state.members = state.members.filter(m => !deleteIds.includes(m.id));
+        sortMembersBySeat(); // ソート
         saveState();
         state.isDeleteMode = false;
         btnToggleDelete.textContent = '議員を削除する';
@@ -533,6 +549,18 @@ function setupEventListeners() {
     }
   });
 
+  // 議席入力欄からフォーカスが外れたタイミングで自動ソート
+  memberListContainer.addEventListener('focusout', (e) => {
+    if (state.phase1Index > 0 || state.currentPhase === 2) return;
+    if (e.target.dataset.seatId) {
+      sortMembersBySeat();
+      saveState();
+      renderMembers();
+      setupGachaBalls();
+    }
+  });
+
+  // リアルタイム入力変更
   memberListContainer.addEventListener('input', (e) => {
     if (state.phase1Index > 0 || state.currentPhase === 2) return;
     const id = e.target.dataset.id || e.target.dataset.seatId;
