@@ -164,13 +164,17 @@ function loadState() {
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      state.members = parsed.members || [...DEFAULT_MEMBERS];
+      if (parsed && Array.isArray(parsed.members)) {
+        state.members = parsed.members;
+      } else {
+        state.members = JSON.parse(JSON.stringify(DEFAULT_MEMBERS));
+      }
     } catch (e) {
       console.error('State load error:', e);
-      state.members = [...DEFAULT_MEMBERS];
+      state.members = JSON.parse(JSON.stringify(DEFAULT_MEMBERS));
     }
   } else {
-    state.members = [...DEFAULT_MEMBERS];
+    state.members = JSON.parse(JSON.stringify(DEFAULT_MEMBERS));
   }
   
   // 議席番号で名簿をソート (空白は最後尾)
@@ -181,9 +185,13 @@ function loadState() {
 // 議席番号で名簿を昇順ソートするヘルパー (空白は最後尾)
 function sortMembersBySeat() {
   state.members.sort((a, b) => {
-    const aSeat = a.seat !== null && a.seat !== undefined && a.seat !== '' ? parseInt(a.seat, 10) : Infinity;
-    const bSeat = b.seat !== null && b.seat !== undefined && b.seat !== '' ? parseInt(b.seat, 10) : Infinity;
-    return aSeat - bSeat;
+    const aSeat = (a.seat !== null && a.seat !== undefined && a.seat !== '') ? parseInt(a.seat, 10) : Infinity;
+    const bSeat = (b.seat !== null && b.seat !== undefined && b.seat !== '') ? parseInt(b.seat, 10) : Infinity;
+    
+    const aNum = isNaN(aSeat) ? Infinity : aSeat;
+    const bNum = isNaN(bSeat) ? Infinity : bSeat;
+    
+    return aNum - bNum;
   });
 }
 
@@ -599,10 +607,9 @@ function setupEventListeners() {
       // 【フェーズ 1】 くじ順決定フェーズ
       // ==========================================
       
-      // 1. 最初のみ：キューとくじ箱(Pool)の準備、および議席番号重複チェック
+      // 1-1. 最初のみ：キューとくじ箱(Pool)の準備
       if (state.phase1Queue.length === 0) {
-        
-        // 議席重複の検証
+        // 重複チェック
         const seatsUsed = [];
         const duplicateSeats = [];
         activeMembers.forEach(m => {
@@ -621,50 +628,70 @@ function setupEventListeners() {
           return;
         }
 
-        // ハイブリッド並び替え（議席のある人を昇順、ない人を最後尾）
+        // ソート
         const assigned = [];
         const unassigned = [];
         activeMembers.forEach(m => {
-          if (m.seat !== null && m.seat !== undefined && m.seat !== '') {
+          const seatVal = m.seat !== null && m.seat !== undefined && m.seat !== '' ? parseInt(m.seat, 10) : null;
+          if (seatVal !== null && !isNaN(seatVal)) {
             assigned.push(m);
           } else {
             unassigned.push(m);
           }
         });
         
-        // 議席順ソート
         assigned.sort((a, b) => a.seat - b.seat);
         
-        // 議席なしはシャッフルして後ろにくっつける
         let sortedUnassigned = [...unassigned];
         if (unassigned.length > 0) {
           const shuffleRes = fairShuffle(unassigned);
           sortedUnassigned = shuffleRes.shuffled;
         }
 
-        // 議席順の引くキューを確定
         state.phase1Queue = [...assigned, ...sortedUnassigned];
         
-        // 1回目に引く「番手くじ」プールをランダムシャッフルで準備 (1番手〜N番手)
+        // 番手カードプール
         const originalPool = Array.from({ length: activeMembers.length }, (_, idx) => idx + 1);
         const poolShuffle = fairShuffle(originalPool);
         state.phase1Pool = poolShuffle.shuffled;
-        state.phase1AuditLog = poolShuffle.auditLog; // 監査ログに記録
+        state.phase1AuditLog = poolShuffle.auditLog;
         
         state.phase1Index = 0;
         state.phase1Results = [];
         
-        renderMembers(); // 編集ロック
+        renderMembers();
         updatePhaseUI();
         return;
       }
 
-      // 1人分引く
+      // 1-2. 既に全員引き終わっている場合 ➔ フェーズ2へ移行するトリガー
+      if (state.phase1Index >= state.phase1Queue.length) {
+        // フェーズ2に必要な変数をあらかじめセットして移行
+        const sorted = [...state.phase1Results].sort((a, b) => a.drawRank - b.drawRank);
+        state.drawOrder = sorted.map(r => r.name);
+        
+        const originalPool = Array.from({ length: activeMembers.length }, (_, idx) => idx + 1);
+        const poolShuffle = fairShuffle(originalPool);
+        state.phase2Pool = poolShuffle.shuffled;
+        state.phase2AuditLog = poolShuffle.auditLog;
+        
+        state.phase2Index = 0;
+        state.finalResults = [];
+
+        state.currentPhase = 2;
+        
+        setupGachaBalls();
+        renderMembers();
+        updatePhaseUI();
+        return;
+      }
+
+      // 1-3. 1人分引く
       btnStartDraw.disabled = true;
       btnAutoDraw.disabled = true;
       
       const currentMember = state.phase1Queue[state.phase1Index];
-      const drawnDrawRank = state.phase1Pool.pop(); // シャッフルした山から1枚引く
+      const drawnDrawRank = state.phase1Pool.pop();
       
       state.phase1Results.push({
         name: currentMember.name,
@@ -687,7 +714,6 @@ function setupEventListeners() {
       await new Promise(resolve => setTimeout(resolve, 200));
       capsuleModal.classList.add('hidden');
 
-      // 結果テーブル（左側）を更新
       renderDrawOrderTable();
       setupGachaBalls();
 
