@@ -90,21 +90,8 @@
               <p class="lever-hint" id="lever-instruction-text">レバーを回すか、下のボタンを押してスタート！</p>
             </div>
           </div>
-
-          <!-- 個別抽選結果がポンと飛び出す演出用 -->
-          <div id="lottery-capsule-modal" class="capsule-modal hidden">
-            <div class="capsule-content">
-              <div class="capsule-sphere">
-                <div class="capsule-top"></div>
-                <div class="capsule-bottom"></div>
-                <div class="capsule-paper">
-                  <span class="draw-number" id="capsule-draw-number">#1</span>
-                  <div class="draw-name" id="capsule-draw-name">議員名</div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
+
 
         <div class="draw-controls" style="display:flex; flex-direction:column; align-items:center; gap:0.75rem;">
           <button id="btn-start-draw" class="btn btn-primary btn-lg btn-glow">1. くじを引く準備（開始）</button>
@@ -169,6 +156,20 @@
     <footer class="app-footer">
       <p>© 2026 与那国町議会 運営委員会サポートツール | Powered by fairdraw (CSPRNG Engine)</p>
     </footer>
+  </div>
+
+  <!-- 個別抽選結果がポンと飛び出す演出用 (全画面モーダル) -->
+  <div id="lottery-capsule-modal" class="capsule-modal hidden">
+    <div class="capsule-content">
+      <div class="capsule-sphere">
+        <div class="capsule-top"></div>
+        <div class="capsule-bottom"></div>
+        <div class="capsule-paper">
+          <span class="draw-number" id="capsule-draw-number">#1</span>
+          <div class="draw-name" id="capsule-draw-name">議員名</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>

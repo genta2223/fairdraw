@@ -37,7 +37,7 @@
 html, body {
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden; /* 完全に横スクロールをシャットアウト */
+  overflow-x: hidden !important; /* 横スクロール絶対禁止 */
   position: relative;
   margin: 0;
   padding: 0;
@@ -57,13 +57,13 @@ body {
 /* App Container Layout */
 .app-container {
   width: 100%;
-  max-width: 100%; /* 横はみ出しを確実に防止 */
+  max-width: 100%;
   padding: 1rem 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   box-sizing: border-box;
-  overflow: hidden; /* 子要素のはみ出しをカット */
+  overflow: hidden !important; /* 横漏れ防止 */
 }
 
 @media (min-width: 768px) {
@@ -146,6 +146,7 @@ body {
   gap: 1.5rem;
   width: 100%;
   max-width: 100%;
+  min-width: 0;
 }
 
 @media (min-width: 900px) {
@@ -172,6 +173,7 @@ body {
   transition: var(--transition-smooth);
   width: 100%;
   max-width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   overflow: hidden; /* 内部パーツのはみ出しを確実に防止 */
 }
@@ -577,16 +579,16 @@ body {
 
 /* 飛び出すカプセルの演出 */
 .capsule-modal {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(11, 10, 18, 0.85);
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(11, 10, 18, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
+  z-index: 9999;
   backdrop-filter: blur(8px);
   transition: opacity 0.3s ease;
 }
@@ -799,6 +801,17 @@ body {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  table-layout: fixed;
+}
+
+.results-table th:first-child,
+.results-table td:first-child {
+  width: 30%;
+}
+
+.results-table th:last-child,
+.results-table td:last-child {
+  width: 70%;
 }
 
 .results-table th {
@@ -814,6 +827,8 @@ body {
   padding: 0.75rem 0.85rem;
   font-size: 0.95rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 .results-table tbody tr:last-child td {
@@ -862,6 +877,16 @@ body {
   white-space: pre-wrap; /* 横スクロールせずスマホ幅で自動折り返し */
   word-break: break-all;
   box-sizing: border-box;
+}
+
+.audit-log-box pre,
+.audit-log-box code {
+  white-space: pre-wrap !important;
+  word-break: break-all !important;
+  max-width: 100% !important;
+  display: block;
+  margin: 0;
+  padding: 0;
 }
 
 .audit-actions {
