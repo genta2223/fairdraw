@@ -68,16 +68,16 @@ function fairShuffle(array) {
 
 // 与那国町議会 実際の公式議席番号（2025年補選完了後時点）
 const DEFAULT_MEMBERS = [
-  { id: '1', seat: 1, name: '崎元 俊男', active: true },
-  { id: '2', seat: 2, name: '大宜見 浩利', active: true },
-  { id: '3', seat: 3, name: '与那原 繁', active: true },
-  { id: '4', seat: 4, name: '与那覇 英作', active: true },
-  { id: '5', seat: 5, name: '小嶺 博泉', active: true },
-  { id: '6', seat: 6, name: '上原 光秀', active: true },
-  { id: '7', seat: 7, name: '杉本 英貴', active: true },
-  { id: '8', seat: 8, name: '阪口 源太', active: true },
+  { id: '1', seat: 1, name: '杉本 英貴', active: true },
+  { id: '2', seat: 2, name: '小島 重喜', active: true },
+  { id: '3', seat: 3, name: '阪口 源太', active: true },
+  { id: '4', seat: 4, name: '小嶺 博泉', active: true },
+  { id: '5', seat: 5, name: '与那覇 英作', active: true },
+  { id: '6', seat: 6, name: '与那原 繁', active: true },
+  { id: '7', seat: 7, name: '崎元 俊男', active: true },
+  { id: '8', seat: 8, name: '上原 光秀', active: true },
   { id: '9', seat: 9, name: '嵩西 茂則', active: true },
-  { id: '10', seat: 10, name: '小島 重喜', active: true }
+  { id: '10', seat: 10, name: '大宜見 浩利', active: true }
 ];
 
 const PRESETS = {
@@ -571,11 +571,47 @@ function setupEventListeners() {
 
       btnStartDraw.disabled = true;
 
-      // 1-1. 常に暗号学的乱数（CSPRNG）でランダムにくじを引く順番を決定する
-      const activeNames = activeMembers.map(m => m.name);
-      const res = fairShuffle(activeNames);
-      const drawOrderNames = res.shuffled;
-      const auditLog = res.auditLog;
+      // 1-1. ハイブリッド順序決定ロジックの実行
+      // 議席番号を持つメンバーと持たない（空白）メンバーに分ける
+      const assigned = [];
+      const unassigned = [];
+
+      activeMembers.forEach(m => {
+        const seatVal = m.seat !== null && m.seat !== undefined && m.seat !== '' ? parseInt(m.seat, 10) : null;
+        if (seatVal !== null && !isNaN(seatVal)) {
+          assigned.push({ name: m.name, seat: seatVal });
+        } else {
+          unassigned.push(m.name);
+        }
+      });
+
+      // 議席番号を持つメンバーを昇順ソート
+      assigned.sort((a, b) => a.seat - b.seat);
+      const sortedAssignedNames = assigned.map(m => m.name);
+
+      // 議席番号のないメンバーをCSPRNGでランダムシャッフル
+      let shuffledUnassignedNames = [];
+      let unassignedAudit = null;
+      if (unassigned.length > 0) {
+        const shuffleRes = fairShuffle(unassigned);
+        shuffledUnassignedNames = shuffleRes.shuffled;
+        unassignedAudit = shuffleRes.auditLog;
+      }
+
+      // 二つのリストを連結 (議席順 ➔ 最後尾に未設定者をシャッフルして結合)
+      const drawOrderNames = [...sortedAssignedNames, ...shuffledUnassignedNames];
+
+      // 監査ログの構築
+      const timestamp = new Date().toISOString();
+      const auditLog = {
+        title: '公平な順番決定システム 監査ログ (1回目: くじを引く順序のハイブリッド決定)',
+        timestamp: timestamp,
+        rule: '議席番号ありの議員は昇順ソート、未設定議員は最後尾でランダムシャッフル',
+        originalParticipants: activeMembers.map(m => `${m.name}(議席:${m.seat || '未設定'})`),
+        assignedOrder: assigned.map(m => `${m.name}(議席:${m.seat})`),
+        unassignedRandomizedLog: unassignedAudit,
+        shuffledOrder: [...drawOrderNames]
+      };
 
       state.drawOrder = drawOrderNames;
       state.phase1AuditLog = auditLog;
