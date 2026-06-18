@@ -43,7 +43,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  overflow-x: hidden;
+  overflow-x: hidden; /* ページ全体の無限右スクロール防止 */
 }
 
 /* App Container Layout */
@@ -299,20 +299,26 @@ body {
   overflow: hidden;
 }
 
-/* Member List Grid (4-column structure with Seat Numbers) */
+/* Member List Grid (Optimized for Mobile/AQUOS and desktop) */
 .list-header, .member-item {
   display: grid;
-  grid-template-columns: 90px 50px 1fr 100px;
+  grid-template-columns: 55px 45px 1fr 45px;
   align-items: center;
 }
 
 .list-header {
   background-color: var(--bg-card);
-  padding: 0.75rem;
-  font-size: 0.85rem;
+  padding: 0.75rem 0.5rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
   font-weight: 600;
   border-bottom: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.list-header .col-name {
+  text-align: left;
+  padding-left: 0.5rem;
 }
 
 .member-list {
@@ -323,7 +329,7 @@ body {
 }
 
 .member-item {
-  padding: 0.6rem 0.75rem;
+  padding: 0.6rem 0.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   transition: var(--transition-smooth);
 }
@@ -332,14 +338,19 @@ body {
   background-color: rgba(255, 255, 255, 0.02);
 }
 
+.col-seat {
+  display: flex;
+  justify-content: center;
+}
+
 .col-seat input[type="number"] {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   color: var(--text-main);
   font-size: 0.9rem;
-  width: 50px;
-  padding: 0.3rem;
+  width: 44px;
+  padding: 0.3rem 0.1rem;
   text-align: center;
   outline: none;
   font-family: var(--font-family);
@@ -350,17 +361,22 @@ body {
   background-color: var(--bg-card);
 }
 
-.batch-add-zone {
+.col-check {
   display: flex;
-  align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
 }
 
 .col-check input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   cursor: pointer;
   accent-color: var(--primary);
+}
+
+.col-name {
+  padding-left: 0.5rem;
+  display: flex;
+  width: 100%;
 }
 
 .col-name input[type="text"] {
@@ -369,8 +385,8 @@ body {
   border-bottom: 1px dashed transparent;
   color: var(--text-main);
   font-size: 0.95rem;
-  width: 80%;
-  padding: 0.2rem;
+  width: 100%; /* 幅いっぱいに広げる */
+  padding: 0.2rem 0;
   transition: var(--transition-smooth);
 }
 
@@ -378,6 +394,11 @@ body {
   border-bottom-color: var(--primary);
   outline: none;
   background-color: rgba(255, 255, 255, 0.03);
+}
+
+.col-action {
+  display: flex;
+  justify-content: center;
 }
 
 .col-action .btn-delete {
@@ -396,8 +417,8 @@ body {
 
 /* 削除用チェックボックス */
 .col-action .delete-checkbox {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   cursor: pointer;
   accent-color: var(--danger);
 }
@@ -426,6 +447,7 @@ body {
 /* Draw Section & Lottery Arena */
 .lottery-arena {
   width: 100%;
+  max-width: 100%; /* 横幅はみ出し防止 */
   aspect-ratio: 4 / 3;
   background: radial-gradient(circle at center, #1b1a38 0%, var(--bg-secondary) 80%);
   border: 1px solid var(--border-color);
@@ -801,8 +823,10 @@ body {
   font-size: 0.75rem;
   color: #00ff66;
   max-height: 220px;
-  overflow: auto;
-  white-space: pre;
+  overflow-y: auto;
+  overflow-x: hidden;
+  white-space: pre-wrap; /* 横スクロールせずスマホ幅で自動折り返し */
+  word-break: break-all;
 }
 
 .audit-actions {
