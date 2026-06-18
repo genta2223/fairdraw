@@ -724,6 +724,7 @@ function setupEventListeners() {
       updatePhaseUI();
       
       resultsPanel.classList.remove('hidden');
+      showAuditLogs(); // 1回目手動ステップ後にリアルタイム出力
 
     } else if (state.currentPhase === 2) {
       // ==========================================
@@ -787,10 +788,7 @@ function setupEventListeners() {
       btnStartDraw.disabled = false;
       btnAutoDraw.disabled = false;
       updatePhaseUI();
-      
-      if (state.phase2Index >= state.drawOrder.length) {
-        showAuditLogs();
-      }
+      showAuditLogs(); // 2回目手動ステップ後にリアルタイム出力
     }
   };
 
@@ -828,6 +826,7 @@ function setupEventListeners() {
         setupGachaBalls();
         state.phase1Index++;
         updatePhaseUI();
+        showAuditLogs(); // 1回目自動処理中にリアルタイム出力
         
         resultsPanel.classList.remove('hidden');
       }
@@ -860,8 +859,8 @@ function setupEventListeners() {
         setupGachaBalls();
         state.phase2Index++;
         updatePhaseUI();
+        showAuditLogs(); // 2回目自動処理中にリアルタイム出力
       }
-      showAuditLogs();
     }
 
     btnStartDraw.disabled = false;
@@ -936,10 +935,7 @@ function showAuditLogs() {
     phase1_poolRandomValues: state.phase1AuditLog,
     phase1_resultsDrawOrder: state.phase1Results,
     phase2_questionDistribution: state.phase2AuditLog,
-    finalReport: state.finalResults.map(r => ({
-      name: r.name,
-      questionRank: r.questionRank
-    }))
+    phase2_resultsQuestionOrder: state.finalResults
   };
 
   auditLogText.textContent = JSON.stringify(combinedLog, null, 2);
