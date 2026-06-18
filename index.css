@@ -34,6 +34,13 @@
   padding: 0;
 }
 
+html, body {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden; /* 完全に横スクロールを抑え込む */
+  position: relative;
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--text-main);
@@ -43,17 +50,17 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  overflow-x: hidden; /* ページ全体の無限右スクロール防止 */
 }
 
 /* App Container Layout */
 .app-container {
   width: 100%;
-  max-width: 1200px;
+  max-width: 100%; /* ビューポート幅を超えないようにする */
   padding: 1rem 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  box-sizing: border-box;
 }
 
 @media (min-width: 768px) {
@@ -751,6 +758,9 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.5rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 @media (min-width: 768px) {
@@ -764,6 +774,8 @@ body {
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 .results-table {
@@ -802,6 +814,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .audit-log-container h3 {
@@ -823,10 +838,13 @@ body {
   font-size: 0.75rem;
   color: #00ff66;
   max-height: 220px;
+  width: 100%;
+  max-width: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   white-space: pre-wrap; /* 横スクロールせずスマホ幅で自動折り返し */
   word-break: break-all;
+  box-sizing: border-box;
 }
 
 .audit-actions {
