@@ -1,7 +1,7 @@
 /**
  * fairdraw - 公平な順番決定システム
- * 2段階フェーズ式くじ引きに対応 (1回目: くじ順決定 ➔ 2回目: 順番通りに質問順を引く)
- * 議席番号に対応、一括追加UI、各種バグ修正済
+ * 2段階フェーズ式くじ引きに対応 (1回目: 議席順にくじを引き「くじを引く順(番手)」を決定 ➔ 2回目: 決定した番手順に本番くじを引き「質問順」を決定)
+ * 議席番号に対応、一括追加UI、各種バグ修正済、オフラインCORS回避版
  */
 
 // ==========================================
@@ -47,7 +47,7 @@ function fairShuffle(array) {
   const timestamp = new Date().toISOString();
   
   const auditLog = {
-    title: '公平な順番決定システム 監査ログ (fairdraw Audit Log)',
+    title: '公平な順番決定システム 監査ログ',
     timestamp: timestamp,
     originalParticipants: [...array],
     shuffledOrder: [...items],
@@ -66,7 +66,7 @@ function fairShuffle(array) {
 // 2. アプリケーション状態 & 定数
 // ==========================================
 
-// 与那国町議会 実際の公式議席番号（2025年補選完了後時点）
+// 与那国町議会 実際の公式議席番号（2025年補選完了後時点の正しい組み合わせ）
 const DEFAULT_MEMBERS = [
   { id: '1', seat: 1, name: '杉本 英貴', active: true },
   { id: '2', seat: 2, name: '小島 重喜', active: true },
@@ -88,17 +88,21 @@ const PRESETS = {
 // 状態管理
 let state = {
   members: [],
-  currentPhase: 1, // 1: くじ引き順決定, 2: 質問順決定
+  currentPhase: 1, // 1: くじ順決定フェーズ, 2: 質問順決定フェーズ
   isDeleteMode: false,
 
-  // フェーズ1データ
-  drawOrder: [], // くじを引く順序になった議員名リスト (シャッフルされた順)
+  // フェーズ1の進行状態
+  phase1Queue: [], // 1回目で「くじを引く人」のキュー（議席順ソート済み、{ id, name, seat } 形式）
+  phase1Index: 0, // 現在引いている順番のインデックス
+  phase1Pool: [], // 1回目に引く「くじ順カード（1番手〜N番手）」のシャッフルされた山
+  phase1Results: [], // 1回目の結果。 { name: '議員名', drawRank: 3 }
   phase1AuditLog: null,
 
-  // フェーズ2データ
-  currentDrawIndex: 0,
-  questionPool: [],
-  finalResults: [],
+  // フェーズ2の進行状態
+  drawOrder: [], // 2回目で「くじを引く人」の順番（1回目の結果 drawRank 順にソートされた議員名リスト）
+  phase2Index: 0, // 2回目の現在のインデックス
+  phase2Pool: [], // 2回目に引く「質問順カード（1番〜N番）」のシャッフルされた山
+  phase2Results: [], // 2回目の最終結果。 { name: '議員名', questionRank: 5 }
   phase2AuditLog: null
 };
 
@@ -169,12 +173,26 @@ function loadState() {
     state.members = [...DEFAULT_MEMBERS];
   }
   
+  resetLotteryState();
+}
+
+function resetLotteryState() {
   state.currentPhase = 1;
   state.isDeleteMode = false;
+  state.phase1Queue = [];
+  state.phase1Index = 0;
+  state.phase1Pool = [];
+  state.phase1Results = [];
+  state.phase1AuditLog = null;
   state.drawOrder = [];
-  state.finalResults = [];
-  state.currentDrawIndex = 0;
-  resultsPanel.classList.add('hidden');
+  state.phase2Index = 0;
+  state.phase2Pool = [];
+  state.phase2Results = [];
+  state.phase2AuditLog = null;
+  
+  if (resultsPanel) {
+    resultsPanel.classList.add('hidden');
+  }
 }
 
 function saveState() {
@@ -200,13 +218,13 @@ function renderMembers() {
 
     item.innerHTML = `
       <div class="col-seat">
-        <input type="number" data-seat-id="${member.id}" value="${member.seat || ''}" min="1" max="99" placeholder="番" ${state.currentPhase === 2 ? 'disabled' : ''}>
+        <input type="number" data-seat-id="${member.id}" value="${member.seat || ''}" min="1" max="99" placeholder="番" ${state.phase1Index > 0 || state.currentPhase === 2 ? 'disabled' : ''}>
       </div>
       <div class="col-check">
-        <input type="checkbox" data-id="${member.id}" ${member.active ? 'checked' : ''} ${state.currentPhase === 2 ? 'disabled' : ''}>
+        <input type="checkbox" data-id="${member.id}" ${member.active ? 'checked' : ''} ${state.phase1Index > 0 || state.currentPhase === 2 ? 'disabled' : ''}>
       </div>
       <div class="col-name">
-        <input type="text" data-id="${member.id}" value="${escapeHtml(member.name)}" placeholder="氏名を入力" ${state.currentPhase === 2 ? 'disabled' : ''}>
+        <input type="text" data-id="${member.id}" value="${escapeHtml(member.name)}" placeholder="氏名を入力" ${state.phase1Index > 0 || state.currentPhase === 2 ? 'disabled' : ''}>
       </div>
       <div class="col-action">
         ${actionHtml}
@@ -219,7 +237,10 @@ function renderMembers() {
   activeCountEl.textContent = activeCount;
 
   checkAllMembers.checked = state.members.length > 0 && state.members.every(m => m.active);
-  if (state.currentPhase === 2) {
+  
+  const isStarted = state.phase1Index > 0 || state.currentPhase === 2;
+  
+  if (isStarted) {
     checkAllMembers.disabled = true;
     btnAddMember.disabled = true;
     btnBatchAdd.disabled = true;
@@ -228,11 +249,9 @@ function renderMembers() {
     presetSelect.disabled = true;
     btnToggleDelete.disabled = true;
     btnCancelDelete.classList.add('hidden');
-    btnRestartDraw.disabled = true; // 2回目の抽選中は操作途中リセットを一旦無効化（誤操作防止のため。終了時はOK）
   } else {
     checkAllMembers.disabled = false;
     btnToggleDelete.disabled = false;
-    btnRestartDraw.disabled = false;
 
     if (state.isDeleteMode) {
       btnCancelDelete.classList.remove('hidden');
@@ -241,7 +260,6 @@ function renderMembers() {
       btnResetMembers.disabled = true;
       btnLoadPreset.disabled = true;
       presetSelect.disabled = true;
-      btnRestartDraw.disabled = true;
     } else {
       btnCancelDelete.classList.add('hidden');
       btnAddMember.disabled = false;
@@ -249,7 +267,6 @@ function renderMembers() {
       btnResetMembers.disabled = false;
       btnLoadPreset.disabled = false;
       presetSelect.disabled = false;
-      btnRestartDraw.disabled = false;
     }
   }
 }
@@ -259,8 +276,12 @@ function setupGachaBalls() {
   const activeMembers = state.members.filter(m => m.active);
   
   let ballCount = activeMembers.length;
-  if (state.currentPhase === 2) {
-    ballCount = state.questionPool.length;
+  if (state.currentPhase === 1) {
+    // 1回目の残りのくじ数
+    ballCount = activeMembers.length - state.phase1Index;
+  } else if (state.currentPhase === 2) {
+    // 2回目の残りのくじ数
+    ballCount = state.phase2Pool.length;
   }
 
   const colors = [
@@ -302,24 +323,38 @@ function updatePhaseUI() {
   if (state.currentPhase === 1) {
     phaseStatus.className = 'phase-status-bar phase-1-active';
     lotteryArena.classList.remove('phase-2-theme');
-    leverInstructionText.textContent = '1回目: レバーか下のボタンでくじ順を決定！';
-    btnStartDraw.textContent = '1. くじを引く順番を決定する';
-    btnStartDraw.className = 'btn btn-primary btn-lg btn-glow';
-    btnAutoDraw.classList.add('hidden');
+    
+    // 最初の準備状態か、引き始めているか
+    if (state.phase1Queue.length === 0) {
+      leverInstructionText.textContent = '1回目: 議席順に「くじ順(番手)」を引きます。準備完了！';
+      btnStartDraw.textContent = '1. くじを引く準備（開始）';
+      btnStartDraw.className = 'btn btn-primary btn-lg btn-glow';
+      btnAutoDraw.classList.add('hidden');
+    } else if (state.phase1Index < state.phase1Queue.length) {
+      const nextMember = state.phase1Queue[state.phase1Index];
+      const seatText = nextMember.seat ? `(議席:${nextMember.seat}番)` : '(議席なし)';
+      leverInstructionText.textContent = `次は議席順 ${state.phase1Index + 1}番手： ${nextMember.name} 議員 ${seatText} が引きます`;
+      btnStartDraw.textContent = `${nextMember.name} 議員が「くじ順」を引く`;
+      btnStartDraw.className = 'btn btn-primary btn-lg btn-glow';
+      btnAutoDraw.classList.remove('hidden');
+    } else {
+      leverInstructionText.textContent = '全員がくじ順を決定しました！2回目へ進みます。';
+      btnStartDraw.textContent = '2. 一般質問順の決定（本番）へ進む';
+      btnStartDraw.className = 'btn btn-secondary btn-lg';
+      btnAutoDraw.classList.add('hidden');
+    }
   } else {
     phaseStatus.className = 'phase-status-bar phase-2-active';
     lotteryArena.classList.add('phase-2-theme');
     
-    if (state.currentDrawIndex < state.drawOrder.length) {
-      const nextMember = state.drawOrder[state.currentDrawIndex];
-      leverInstructionText.textContent = `次はくじ順 ${state.currentDrawIndex + 1}番： ${nextMember} 議員が引きます`;
-      btnStartDraw.textContent = `【${state.currentDrawIndex + 1}番手】${nextMember} 議員のくじを引く`;
+    if (state.phase2Index < state.drawOrder.length) {
+      const nextMember = state.drawOrder[state.phase2Index];
+      leverInstructionText.textContent = `次はくじ順 ${state.phase2Index + 1}番手： ${nextMember} 議員が本番を引きます`;
+      btnStartDraw.textContent = `【${state.phase2Index + 1}番手】${nextMember} 議員が質問順を引く`;
       btnStartDraw.className = 'btn btn-primary btn-lg btn-glow';
-      
-      // 2回目フェーズに入り、かつまだ未完了の議員がいる場合のみ「残りを自動で引く」を表示
       btnAutoDraw.classList.remove('hidden');
     } else {
-      leverInstructionText.textContent = 'すべての質問順が決定しました！';
+      leverInstructionText.textContent = 'すべての一般質問順序が決定しました！';
       btnStartDraw.textContent = '抽選完了 (最初からやり直す)';
       btnStartDraw.className = 'btn btn-secondary btn-lg';
       btnAutoDraw.classList.add('hidden');
@@ -328,12 +363,12 @@ function updatePhaseUI() {
 }
 
 function setupEventListeners() {
-  // 1名追加 (名前と議席を入力させるポップアップ)
+  // 1名追加
   btnAddMember.addEventListener('click', () => {
-    if (state.currentPhase === 2) return;
+    if (state.phase1Index > 0 || state.currentPhase === 2) return;
     
     const name = prompt('追加する議員の氏名を入力してください:');
-    if (name === null) return; // キャンセルされた場合
+    if (name === null) return;
     const trimmedName = name.trim();
     if (trimmedName === '') {
       alert('氏名が入力されていません。');
@@ -357,16 +392,15 @@ function setupEventListeners() {
     setupGachaBalls();
   });
 
-  // 一括追加 (カンマやスペース、改行で区切られた名簿を解析)
+  // 一括追加
   btnBatchAdd.addEventListener('click', () => {
-    if (state.currentPhase === 2) return;
+    if (state.phase1Index > 0 || state.currentPhase === 2) return;
     
     const input = prompt(
       '追加したい複数の議員名を「読点（、）」または「スペース」または「改行」で区切って入力してください:\n(例: 久部良太郎、祖納次郎、比川三郎)'
     );
     if (input === null) return;
 
-    // 様々な区切り文字（、, , \n, \t）で分割してトリミング
     const names = input
       .split(/[、\s\n\r]+/)
       .map(n => n.trim())
@@ -395,7 +429,7 @@ function setupEventListeners() {
   });
 
   btnLoadPreset.addEventListener('click', () => {
-    if (state.currentPhase === 2) return;
+    if (state.phase1Index > 0 || state.currentPhase === 2) return;
     const selectedKey = presetSelect.value;
     if (PRESETS[selectedKey]) {
       const label = presetSelect.options[presetSelect.selectedIndex].text;
@@ -407,46 +441,29 @@ function setupEventListeners() {
           active: m.active
         }));
         saveState();
+        resetLotteryState();
         renderMembers();
         setupGachaBalls();
-        resultsPanel.classList.add('hidden');
-        state.currentPhase = 1;
         updatePhaseUI();
       }
     }
   });
 
-  // 抽選のみを最初からやり直す（途中リセット）
-  btnRestartDraw.addEventListener('click', () => {
-    if (confirm('現在の抽選結果をすべて破棄し、1回目の「くじを引く順の決定」からやり直しますか？\n（議員名簿データは削除されません）')) {
-      state.currentPhase = 1;
-      state.drawOrder = [];
-      state.finalResults = [];
-      state.currentDrawIndex = 0;
-      resultsPanel.classList.add('hidden');
-      renderMembers();
-      setupGachaBalls();
-      updatePhaseUI();
-    }
-  });
-
-  // 議員初期化（名簿の完全削除・初期化）
   btnResetMembers.addEventListener('click', () => {
+    if (state.phase1Index > 0 || state.currentPhase === 2) return;
     if (state.isDeleteMode) {
       state.isDeleteMode = false;
       btnToggleDelete.textContent = '議員を削除する';
       btnToggleDelete.classList.remove('btn-danger-active');
     }
     
-    // 名簿が消えるという強い警告を表示
     if (confirm('【警告】登録されている議員名簿データを「すべて消去」し、初期状態（与那国町議会10名）に戻します。\n本当によろしいですか？')) {
       if (confirm('本当によろしいですね？名簿の編集内容は完全に失われます。')) {
         state.members = JSON.parse(JSON.stringify(DEFAULT_MEMBERS));
         saveState();
+        resetLotteryState();
         renderMembers();
         setupGachaBalls();
-        resultsPanel.classList.add('hidden');
-        state.currentPhase = 1;
         updatePhaseUI();
       }
     }
@@ -494,7 +511,7 @@ function setupEventListeners() {
   });
 
   checkAllMembers.addEventListener('change', (e) => {
-    if (state.currentPhase === 2) return;
+    if (state.phase1Index > 0 || state.currentPhase === 2) return;
     const checked = e.target.checked;
     state.members.forEach(m => m.active = checked);
     saveState();
@@ -503,7 +520,7 @@ function setupEventListeners() {
   });
 
   memberListContainer.addEventListener('change', (e) => {
-    if (state.currentPhase === 2) return;
+    if (state.phase1Index > 0 || state.currentPhase === 2) return;
     const id = e.target.dataset.id;
     if (id && e.target.type === 'checkbox') {
       const member = state.members.find(m => m.id === id);
@@ -516,9 +533,8 @@ function setupEventListeners() {
     }
   });
 
-  // 議席番号・名前の入力変更イベント
   memberListContainer.addEventListener('input', (e) => {
-    if (state.currentPhase === 2) return;
+    if (state.phase1Index > 0 || state.currentPhase === 2) return;
     const id = e.target.dataset.id || e.target.dataset.seatId;
     if (!id) return;
     const member = state.members.find(m => m.id === id);
@@ -532,9 +548,18 @@ function setupEventListeners() {
     saveState();
   });
 
-  // 統合された抽選ハンドラー
+  // 抽選を最初からやり直す（途中リセット）
+  btnRestartDraw.addEventListener('click', () => {
+    if (confirm('現在の抽選結果をすべて破棄し、1回目の「くじを引く準備」からやり直しますか？\n（議員名簿データは削除されません）')) {
+      resetLotteryState();
+      renderMembers();
+      setupGachaBalls();
+      updatePhaseUI();
+    }
+  });
+
+  // 統合された手動くじ引き処理
   const handleDrawAction = async () => {
-    // 参加チェックの入っている議員
     const activeMembers = state.members.filter(m => m.active);
     if (activeMembers.length < 2) {
       alert('抽選には少なくとも2人以上の参加議員が必要です。');
@@ -543,131 +568,137 @@ function setupEventListeners() {
 
     if (state.currentPhase === 1) {
       // ==========================================
-      // 【フェーズ 1】 くじを引く順番の決定
+      // 【フェーズ 1】 くじ順決定フェーズ
       // ==========================================
       
-      // 1. 議席番号の設定チェックと重複（排他）チェック
-      const seatsUsed = [];
-      const duplicateSeats = [];
-      
-      activeMembers.forEach(m => {
-        if (m.seat !== null && m.seat !== undefined && m.seat !== '') {
-          const seatNum = parseInt(m.seat, 10);
-          if (seatsUsed.includes(seatNum)) {
-            if (!duplicateSeats.includes(seatNum)) {
-              duplicateSeats.push(seatNum);
+      // 1. 最初のみ：キューとくじ箱(Pool)の準備、および議席番号重複チェック
+      if (state.phase1Queue.length === 0) {
+        
+        // 議席重複の検証
+        const seatsUsed = [];
+        const duplicateSeats = [];
+        activeMembers.forEach(m => {
+          if (m.seat !== null && m.seat !== undefined && m.seat !== '') {
+            const seatNum = parseInt(m.seat, 10);
+            if (seatsUsed.includes(seatNum)) {
+              if (!duplicateSeats.includes(seatNum)) duplicateSeats.push(seatNum);
+            } else {
+              seatsUsed.push(seatNum);
             }
-          } else {
-            seatsUsed.push(seatNum);
           }
-        }
-      });
+        });
 
-      // 重複があればエラーダイアログを出して進行をブロックする
-      if (duplicateSeats.length > 0) {
-        alert(`エラー: 以下の議席番号が重複して登録されています。\n【議席番号: ${duplicateSeats.join(', ')}】\n各議員の議席番号が重複しないように修正してください。`);
+        if (duplicateSeats.length > 0) {
+          alert(`エラー: 以下の議席番号が重複しています。\n【議席番号: ${duplicateSeats.join(', ')}】\n修正してから開始してください。`);
+          return;
+        }
+
+        // ハイブリッド並び替え（議席のある人を昇順、ない人を最後尾）
+        const assigned = [];
+        const unassigned = [];
+        activeMembers.forEach(m => {
+          if (m.seat !== null && m.seat !== undefined && m.seat !== '') {
+            assigned.push(m);
+          } else {
+            unassigned.push(m);
+          }
+        });
+        
+        // 議席順ソート
+        assigned.sort((a, b) => a.seat - b.seat);
+        
+        // 議席なしはシャッフルして後ろにくっつける
+        let sortedUnassigned = [...unassigned];
+        if (unassigned.length > 0) {
+          const shuffleRes = fairShuffle(unassigned);
+          sortedUnassigned = shuffleRes.shuffled;
+        }
+
+        // 議席順の引くキューを確定
+        state.phase1Queue = [...assigned, ...sortedUnassigned];
+        
+        // 1回目に引く「番手くじ」プールをランダムシャッフルで準備 (1番手〜N番手)
+        const originalPool = Array.from({ length: activeMembers.length }, (_, idx) => idx + 1);
+        const poolShuffle = fairShuffle(originalPool);
+        state.phase1Pool = poolShuffle.shuffled;
+        state.phase1AuditLog = poolShuffle.auditLog; // 監査ログに記録
+        
+        state.phase1Index = 0;
+        state.phase1Results = [];
+        
+        renderMembers(); // 編集ロック
+        updatePhaseUI();
         return;
       }
 
+      // 1人分引く
       btnStartDraw.disabled = true;
-
-      // 1-1. ハイブリッド順序決定ロジックの実行
-      // 議席番号を持つメンバーと持たない（空白）メンバーに分ける
-      const assigned = [];
-      const unassigned = [];
-
-      activeMembers.forEach(m => {
-        const seatVal = m.seat !== null && m.seat !== undefined && m.seat !== '' ? parseInt(m.seat, 10) : null;
-        if (seatVal !== null && !isNaN(seatVal)) {
-          assigned.push({ name: m.name, seat: seatVal });
-        } else {
-          unassigned.push(m.name);
-        }
+      btnAutoDraw.disabled = true;
+      
+      const currentMember = state.phase1Queue[state.phase1Index];
+      const drawnDrawRank = state.phase1Pool.pop(); // シャッフルした山から1枚引く
+      
+      state.phase1Results.push({
+        name: currentMember.name,
+        drawRank: drawnDrawRank
       });
 
-      // 議席番号を持つメンバーを昇順ソート
-      assigned.sort((a, b) => a.seat - b.seat);
-      const sortedAssignedNames = assigned.map(m => m.name);
-
-      // 議席番号のないメンバーをCSPRNGでランダムシャッフル
-      let shuffledUnassignedNames = [];
-      let unassignedAudit = null;
-      if (unassigned.length > 0) {
-        const shuffleRes = fairShuffle(unassigned);
-        shuffledUnassignedNames = shuffleRes.shuffled;
-        unassignedAudit = shuffleRes.auditLog;
-      }
-
-      // 二つのリストを連結 (議席順 ➔ 最後尾に未設定者をシャッフルして結合)
-      const drawOrderNames = [...sortedAssignedNames, ...shuffledUnassignedNames];
-
-      // 監査ログの構築
-      const timestamp = new Date().toISOString();
-      const auditLog = {
-        title: '公平な順番決定システム 監査ログ (1回目: くじを引く順序のハイブリッド決定)',
-        timestamp: timestamp,
-        rule: '議席番号ありの議員は昇順ソート、未設定議員は最後尾でランダムシャッフル',
-        originalParticipants: activeMembers.map(m => `${m.name}(議席:${m.seat || '未設定'})`),
-        assignedOrder: assigned.map(m => `${m.name}(議席:${m.seat})`),
-        unassignedRandomizedLog: unassignedAudit,
-        shuffledOrder: [...drawOrderNames]
-      };
-
-      state.drawOrder = drawOrderNames;
-      state.phase1AuditLog = auditLog;
-
-      // 1-2. ガチャ回転演出 (1.2秒)
+      // ガチャ回転演出
       gachaMachine.classList.add('gacha-spinning');
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       gachaMachine.classList.remove('gacha-spinning');
 
-      // 1-3. 全員分を0.9秒間隔で自動ポップアップ表示
-      for (let i = 0; i < drawOrderNames.length; i++) {
-        const name = drawOrderNames[i];
-        const drawRank = i + 1;
+      // 結果カプセル
+      capsuleModal.className = 'capsule-modal';
+      capsuleDrawNumber.textContent = `くじを引く順(番手) 決定`;
+      capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember.name} 議員</span><br><span style="color:var(--primary); font-size:1.4rem;">【第 ${drawnDrawRank} 番手】</span>`;
 
-        capsuleModal.className = 'capsule-modal';
-        capsuleDrawNumber.textContent = `くじ順 第 ${drawRank} 順位`;
-        capsuleDrawName.textContent = `${name} 議員`;
+      await new Promise(resolve => setTimeout(resolve, 2200));
 
-        await new Promise(resolve => setTimeout(resolve, 900));
+      capsuleModal.classList.add('closing');
+      await new Promise(resolve => setTimeout(resolve, 200));
+      capsuleModal.classList.add('hidden');
 
-        capsuleModal.classList.add('closing');
-        await new Promise(resolve => setTimeout(resolve, 200));
-        capsuleModal.classList.add('hidden');
-      }
-
-      // 1-4. 2回目の本番質問くじプールの準備
-      const originalPool = Array.from({ length: activeMembers.length }, (_, idx) => idx + 1);
-      const shuffleRes = fairShuffle(originalPool);
-      state.questionPool = shuffleRes.shuffled;
-      state.phase2AuditLog = shuffleRes.auditLog;
-      
-      state.currentDrawIndex = 0;
-      state.finalResults = [];
-
-      state.currentPhase = 2;
-      btnStartDraw.disabled = false;
-      
-      renderMembers();
-      setupGachaBalls();
-      updatePhaseUI();
+      // 結果テーブル（左側）を更新
       renderDrawOrderTable();
+      setupGachaBalls();
+
+      state.phase1Index++;
+      btnStartDraw.disabled = false;
+      btnAutoDraw.disabled = false;
+      updatePhaseUI();
+      
       resultsPanel.classList.remove('hidden');
-      resultsPanel.scrollIntoView({ behavior: 'smooth' });
 
     } else if (state.currentPhase === 2) {
       // ==========================================
-      // 【フェーズ 2】 順番に一般質問順を引く
+      // 【フェーズ 2】 一般質問順決定（本番）
       // ==========================================
       
-      if (state.currentDrawIndex >= state.drawOrder.length) {
+      // 移行処理: まだ2回目が始まっていない場合
+      if (state.phase2Pool.length === 0 && state.finalResults.length === 0) {
+        // 1回目の「結果の番手」の昇順に並び替え、2回目で「くじを引く順番」のリストを作る
+        const sorted = [...state.phase1Results].sort((a, b) => a.drawRank - b.drawRank);
+        state.drawOrder = sorted.map(r => r.name);
+        
+        // 2回目の「質問順カード（1番〜N番）」のプールをシャッフル
+        const originalPool = Array.from({ length: activeMembers.length }, (_, idx) => idx + 1);
+        const poolShuffle = fairShuffle(originalPool);
+        state.phase2Pool = poolShuffle.shuffled;
+        state.phase2AuditLog = poolShuffle.auditLog;
+        
+        state.phase2Index = 0;
+        state.finalResults = [];
+        
+        setupGachaBalls();
+        updatePhaseUI();
+        return;
+      }
+
+      // 全員引き終わっている場合、リセット
+      if (state.phase2Index >= state.drawOrder.length) {
         if (confirm('名簿設定に戻り、最初から抽選をやり直しますか？')) {
-          state.currentPhase = 1;
-          state.drawOrder = [];
-          state.finalResults = [];
-          state.currentDrawIndex = 0;
-          resultsPanel.classList.add('hidden');
+          resetLotteryState();
           renderMembers();
           setupGachaBalls();
           updatePhaseUI();
@@ -676,9 +707,11 @@ function setupEventListeners() {
       }
 
       btnStartDraw.disabled = true;
-      const currentMember = state.drawOrder[state.currentDrawIndex];
+      btnAutoDraw.disabled = true;
       
-      const finalRank = state.questionPool.pop();
+      const currentMember = state.drawOrder[state.phase2Index];
+      const finalRank = state.phase2Pool.pop(); // 山から1枚引く
+      
       state.finalResults.push({
         name: currentMember,
         questionRank: finalRank
@@ -689,7 +722,7 @@ function setupEventListeners() {
       gachaMachine.classList.remove('gacha-spinning');
 
       capsuleModal.className = 'capsule-modal';
-      capsuleDrawNumber.textContent = `一般質問順位 確定`;
+      capsuleDrawNumber.textContent = `一般質問順序 確定`;
       capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember} 議員</span><br><span style="color:var(--secondary); font-size:1.4rem;">【第 ${finalRank} 番】</span>`;
 
       await new Promise(resolve => setTimeout(resolve, 2200));
@@ -701,62 +734,89 @@ function setupEventListeners() {
       renderQuestionOrderTable();
       setupGachaBalls();
 
-      state.currentDrawIndex++;
+      state.phase2Index++;
       btnStartDraw.disabled = false;
+      btnAutoDraw.disabled = false;
       updatePhaseUI();
       
-      if (state.currentDrawIndex >= state.drawOrder.length) {
+      if (state.phase2Index >= state.drawOrder.length) {
         showAuditLogs();
       }
     }
   };
 
-  // 残りをすべて自動で引いていく処理 (1人あたり2.4秒)
+  // 「残りを全自動で引く」処理 (1回目と2回目の両方に対応)
   const handleAutoDrawAction = async () => {
-    if (state.currentPhase !== 2) return;
-    
-    // 全自動実行中、ボタン類をすべて無効化
     btnStartDraw.disabled = true;
     btnAutoDraw.disabled = true;
 
-    while (state.currentDrawIndex < state.drawOrder.length) {
-      const currentMember = state.drawOrder[state.currentDrawIndex];
-      const finalRank = state.questionPool.pop();
-      
-      state.finalResults.push({
-        name: currentMember,
-        questionRank: finalRank
-      });
+    if (state.currentPhase === 1) {
+      // 1回目の残りを自動で引く
+      while (state.phase1Index < state.phase1Queue.length) {
+        const currentMember = state.phase1Queue[state.phase1Index];
+        const drawnDrawRank = state.phase1Pool.pop();
+        
+        state.phase1Results.push({
+          name: currentMember.name,
+          drawRank: drawnDrawRank
+        });
 
-      // ガチャ回転演出
-      gachaMachine.classList.add('gacha-spinning');
-      await new Promise(resolve => setTimeout(resolve, 900));
-      gachaMachine.classList.remove('gacha-spinning');
+        gachaMachine.classList.add('gacha-spinning');
+        await new Promise(resolve => setTimeout(resolve, 900));
+        gachaMachine.classList.remove('gacha-spinning');
 
-      // 結果カプセル表示
-      capsuleModal.className = 'capsule-modal';
-      capsuleDrawNumber.textContent = `一般質問順位 確定`;
-      capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember} 議員</span><br><span style="color:var(--secondary); font-size:1.4rem;">【第 ${finalRank} 番】</span>`;
+        capsuleModal.className = 'capsule-modal';
+        capsuleDrawNumber.textContent = `くじを引く順(番手) 決定`;
+        capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember.name} 議員</span><br><span style="color:var(--primary); font-size:1.4rem;">【第 ${drawnDrawRank} 番手】</span>`;
 
-      // 1.2秒間開示
-      await new Promise(resolve => setTimeout(resolve, 1200));
+        await new Promise(resolve => setTimeout(resolve, 1200));
 
-      // 閉じる演出 (0.2秒)
-      capsuleModal.classList.add('closing');
-      await new Promise(resolve => setTimeout(resolve, 200));
-      capsuleModal.classList.add('hidden');
+        capsuleModal.classList.add('closing');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        capsuleModal.classList.add('hidden');
 
-      // テーブルとボール状態の更新
-      renderQuestionOrderTable();
-      setupGachaBalls();
+        renderDrawOrderTable();
+        setupGachaBalls();
+        state.phase1Index++;
+        updatePhaseUI();
+        
+        resultsPanel.classList.remove('hidden');
+      }
+    } else if (state.currentPhase === 2) {
+      // 2回目の残りを自動で引く
+      while (state.phase2Index < state.drawOrder.length) {
+        const currentMember = state.drawOrder[state.phase2Index];
+        const finalRank = state.phase2Pool.pop();
+        
+        state.finalResults.push({
+          name: currentMember,
+          questionRank: finalRank
+        });
 
-      state.currentDrawIndex++;
-      updatePhaseUI();
+        gachaMachine.classList.add('gacha-spinning');
+        await new Promise(resolve => setTimeout(resolve, 900));
+        gachaMachine.classList.remove('gacha-spinning');
+
+        capsuleModal.className = 'capsule-modal';
+        capsuleDrawNumber.textContent = `一般質問順序 確定`;
+        capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember} 議員</span><br><span style="color:var(--secondary); font-size:1.4rem;">【第 ${finalRank} 番】</span>`;
+
+        await new Promise(resolve => setTimeout(resolve, 1200));
+
+        capsuleModal.classList.add('closing');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        capsuleModal.classList.add('hidden');
+
+        renderQuestionOrderTable();
+        setupGachaBalls();
+        state.phase2Index++;
+        updatePhaseUI();
+      }
+      showAuditLogs();
     }
 
     btnStartDraw.disabled = false;
     btnAutoDraw.disabled = false;
-    showAuditLogs();
   };
 
   btnStartDraw.addEventListener('click', handleDrawAction);
@@ -790,16 +850,20 @@ function setupEventListeners() {
 
 function renderDrawOrderTable() {
   resultsDrawOrderBody.innerHTML = '';
-  state.drawOrder.forEach((name, index) => {
+  // 番手順（昇順）に並べ替えて表示
+  const sorted = [...state.phase1Results].sort((a, b) => a.drawRank - b.drawRank);
+  sorted.forEach((item) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${index + 1}番手</td>
-      <td>${escapeHtml(name)}</td>
+      <td>${item.drawRank}番手</td>
+      <td>${escapeHtml(item.name)}</td>
     `;
     resultsDrawOrderBody.appendChild(tr);
   });
   
-  resultsQuestionOrderBody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:var(--text-muted);">本番くじ引き実行中...</td></tr>`;
+  if (state.currentPhase === 1) {
+    resultsQuestionOrderBody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:var(--text-muted);">本番くじ引き実行中...</td></tr>`;
+  }
 }
 
 function renderQuestionOrderTable() {
@@ -819,7 +883,9 @@ function showAuditLogs() {
   const combinedLog = {
     title: '公平な順番決定システム 2段階抽選監査ログ',
     timestamp: new Date().toISOString(),
-    phase1_drawOrder: state.phase1AuditLog,
+    phase1_assignedQueue: state.phase1Queue.map(q => `${q.name}(議席:${q.seat || '未設定'})`),
+    phase1_poolRandomValues: state.phase1AuditLog,
+    phase1_resultsDrawOrder: state.phase1Results,
     phase2_questionDistribution: state.phase2AuditLog,
     finalReport: state.finalResults.map(r => ({
       name: r.name,
