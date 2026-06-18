@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>公平な順番決定システム (fairdraw) | 与那国町議会一般質問</title>
+  <meta name="description" content="暗号学的乱数(CSPRNG)とFisher-Yatesシャッフルを用いた、改ざん不可能で公平な順番決定システム。与那国町議会などの抽選に最適です。">
+  <link rel="stylesheet" href="index.css">
+  <!-- Google Fonts: Inter & Noto Sans JP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Noto+Sans+JP:wght@300;400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="logo">
+        <span class="logo-icon">⚖️</span>
+        <h1>fairdraw <span class="badge">v1.0</span></h1>
+      </div>
+      <p class="subtitle">与那国町議会 運営委員会・一般質問順位 抽選システム</p>
+    </header>
+
+    <main class="app-main">
+      <!-- 設定エリア -->
+      <section class="section config-section" id="setup-panel">
+        <h2 class="section-title">1. 議員・参加者の設定</h2>
+        
+        <div class="preset-row">
+          <label for="preset-select">議会プリセット:</label>
+          <select id="preset-select" class="select-preset">
+            <option value="yonaguni">与那国町議会 (定数10)</option>
+            <option value="empty">空のリスト (新規作成用)</option>
+          </select>
+          <button id="btn-load-preset" class="btn btn-secondary btn-sm">読み込む</button>
+        </div>
+        
+        <div class="control-row">
+          <button id="btn-add-member" class="btn btn-secondary">＋ 1名追加</button>
+          <button id="btn-batch-add" class="btn btn-secondary">＋ 一括追加</button>
+          <button id="btn-toggle-delete" class="btn btn-danger-outline">議員を削除する</button>
+          <button id="btn-cancel-delete" class="btn btn-secondary hidden">キャンセル</button>
+          <button id="btn-reset-members" class="btn btn-danger-outline">初期化</button>
+        </div>
+
+        <div class="member-list-container">
+          <div class="list-header">
+            <span class="col-seat">議席</span>
+            <span class="col-check">
+              <input type="checkbox" id="check-all-members" checked>
+            </span>
+            <span class="col-name">氏名</span>
+            <span class="col-action">操作</span>
+          </div>
+          <div id="member-list" class="member-list">
+            <!-- 動的に追加されます -->
+          </div>
+        </div>
+
+        <div class="summary-box">
+          <p>登録総数: <strong id="total-count">0</strong>名 | 参加予定: <strong id="active-count" class="text-primary">0</strong>名</p>
+        </div>
+      </section>
+
+      <!-- 抽選メインエリア -->
+      <section class="section draw-section" id="draw-panel">
+        <h2 class="section-title">2. 順番決定（くじ引き）</h2>
+        
+        <!-- 現在のフェーズ表示ステータスバー -->
+        <div class="phase-status-bar phase-1-active" id="phase-status">
+          <div class="phase-step phase-step-1">1. くじを引く順の決定</div>
+          <div class="phase-arrow">➔</div>
+          <div class="phase-step phase-step-2">2. 一般質問順の決定</div>
+        </div>
+
+        <!-- 抽選アニメーションコンテナ -->
+        <div class="lottery-arena" id="lottery-arena">
+          <div id="gacha-machine" class="gacha-machine">
+            <!-- ガチャ玉・演出表示エリア -->
+            <div class="gacha-glass">
+              <div class="ball-container" id="ball-container">
+                <!-- 動的にくじ玉を配置 -->
+              </div>
+            </div>
+            <div class="gacha-lever-zone">
+              <div class="lever-wheel" id="gacha-lever">
+                <div class="lever-handle"></div>
+              </div>
+              <p class="lever-hint" id="lever-instruction-text">レバーを回すか、下のボタンを押してスタート！</p>
+            </div>
+          </div>
+
+          <!-- 個別抽選結果がポンと飛び出す演出用 -->
+          <div id="lottery-capsule-modal" class="capsule-modal hidden">
+            <div class="capsule-content">
+              <div class="capsule-sphere">
+                <div class="capsule-top"></div>
+                <div class="capsule-bottom"></div>
+                <div class="capsule-paper">
+                  <span class="draw-number" id="capsule-draw-number">#1</span>
+                  <div class="draw-name" id="capsule-draw-name">議員名</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="draw-controls" style="display:flex; flex-direction:column; align-items:center; gap:0.75rem;">
+          <button id="btn-start-draw" class="btn btn-primary btn-lg btn-glow">1. くじを引く順を決定する</button>
+          <button id="btn-auto-draw" class="btn btn-secondary hidden" style="border-color:var(--secondary); color:var(--secondary);">残りを全自動で引く</button>
+        </div>
+      </section>
+
+      <!-- 結果・ログエリア -->
+      <section class="section results-section hidden" id="results-panel">
+        <h2 class="section-title">3. 決定結果一覧</h2>
+        
+        <div class="results-layout">
+          <!-- 1回目：くじ引き順テーブル -->
+          <div class="results-table-container">
+            <h3>🟣 1回目：くじを引く順序</h3>
+            <table class="results-table">
+              <thead>
+                <tr>
+                  <th>順序</th>
+                  <th>氏名</th>
+                </tr>
+              </thead>
+              <tbody id="results-draw-order-body">
+                <!-- くじを引く順の結果行 -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 2回目：本番質問順位テーブル -->
+          <div class="results-table-container" id="final-results-table-container">
+            <h3>🟢 2回目：一般質問順序</h3>
+            <table class="results-table">
+              <thead>
+                <tr>
+                  <th>質問順</th>
+                  <th>氏名</th>
+                </tr>
+              </thead>
+              <tbody id="results-question-order-body">
+                <!-- 最終結果 -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 監査・検証ログ -->
+          <div class="audit-log-container" style="grid-column: 1 / -1;">
+            <h3>🛡️ 公平性検証・監査ログ</h3>
+            <p class="audit-desc">暗号学的乱数(CSPRNG)とFisher-Yatesアルゴリズムで生成された監査ログです。誰でもこのデータを検証できます。</p>
+            <div class="audit-log-box">
+              <pre><code id="audit-log-text">ここに監査ログが表示されます...</code></pre>
+            </div>
+            <div class="audit-actions">
+              <button id="btn-copy-log" class="btn btn-secondary btn-sm">ログをコピー</button>
+              <button id="btn-download-log" class="btn btn-secondary btn-sm">ファイル保存</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>© 2026 与那国町議会 運営委員会サポートツール | Powered by fairdraw (CSPRNG Engine)</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

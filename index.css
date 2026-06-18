@@ -1,0 +1,827 @@
+/* CSS Design System for fairdraw */
+
+:root {
+  /* HSL Tailored Theme: Premium Dark Purple & Royal Blue */
+  --bg-primary: #0b0a12;
+  --bg-secondary: #141324;
+  --bg-card: #1d1c33;
+  --bg-card-hover: #262442;
+  
+  --text-main: #f5f5fa;
+  --text-muted: #8b8aab;
+  
+  --primary: #7c4dff;
+  --primary-glow: rgba(124, 77, 255, 0.4);
+  --secondary: #00e5ff;
+  --secondary-glow: rgba(0, 229, 255, 0.3);
+  
+  --success: #00e676;
+  --danger: #ff1744;
+  --danger-outline: rgba(255, 23, 68, 0.2);
+  
+  --border-color: #2c2a4a;
+  --border-hover: #4d4980;
+  
+  --font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --border-radius-lg: 16px;
+  --border-radius-md: 8px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: var(--font-family);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-x: hidden;
+}
+
+/* App Container Layout */
+.app-container {
+  width: 100%;
+  max-width: 1200px;
+  padding: 1rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .app-container {
+    padding: 2rem 1rem;
+    gap: 2rem;
+  }
+}
+
+/* Header */
+.app-header {
+  text-align: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.logo-icon {
+  font-size: 1.75rem;
+}
+
+@media (min-width: 768px) {
+  .logo-icon {
+    font-size: 2.25rem;
+  }
+}
+
+.logo h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  background: linear-gradient(135deg, var(--text-main) 30%, var(--primary) 70%, var(--secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@media (min-width: 768px) {
+  .logo h1 {
+    font-size: 2.5rem;
+  }
+}
+
+.badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  vertical-align: middle;
+  padding: 0.15rem 0.4rem;
+  border-radius: 20px;
+  background: rgba(124, 77, 255, 0.2);
+  color: var(--secondary);
+  border: 1px solid rgba(124, 77, 255, 0.3);
+  margin-left: 0.25rem;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 400;
+  padding: 0 0.5rem;
+  line-height: 1.4;
+}
+
+@media (min-width: 768px) {
+  .subtitle {
+    font-size: 1rem;
+  }
+}
+
+/* Main Content Grid */
+.app-main {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 900px) {
+  .app-main {
+    grid-template-columns: 1fr 1.2fr;
+    gap: 2rem;
+  }
+  
+  .results-section {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Section Common Styles */
+.section {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  transition: var(--transition-smooth);
+}
+
+.section:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 12px 40px 0 rgba(124, 77, 255, 0.1);
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  border-left: 4px solid var(--primary);
+  padding-left: 0.75rem;
+}
+
+/* Buttons */
+.btn {
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--border-radius-md);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px; /* モバイルの最小タップサイズ基準 */
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, #6200ea 100%);
+  color: white;
+  box-shadow: 0 4px 14px var(--primary-glow);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 77, 255, 0.6);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-primary.btn-glow {
+  animation: pulse 2s infinite;
+}
+
+.btn-secondary {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-card-hover);
+  border-color: var(--border-hover);
+}
+
+.btn-danger-outline {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger-outline);
+}
+
+.btn-danger-outline:hover {
+  background: rgba(255, 23, 68, 0.1);
+  border-color: var(--danger);
+}
+
+.btn-lg {
+  font-size: 1.1rem;
+  padding: 1rem 2rem;
+  border-radius: 30px;
+}
+
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.8rem;
+}
+
+/* Control Row & Presets */
+.preset-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--bg-card);
+  padding: 0.75rem;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.preset-row label {
+  font-weight: 600;
+}
+
+.select-preset {
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 0.5rem 0.8rem;
+  font-family: var(--font-family);
+  font-size: 0.95rem;
+  outline: none;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  min-height: 40px;
+}
+
+.select-preset:focus {
+  border-color: var(--primary);
+}
+
+.control-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .control-row > button,
+  .preset-row > select,
+  .preset-row > button {
+    flex: 1 1 40%; /* スマホ画面幅に合わせたフレックス均等配置 */
+  }
+}
+
+/* Member List Container Frame */
+.member-list-container {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+/* Member List Grid (4-column structure with Seat Numbers) */
+.list-header, .member-item {
+  display: grid;
+  grid-template-columns: 70px 50px 1fr 100px;
+  align-items: center;
+}
+
+.list-header {
+  background-color: var(--bg-card);
+  padding: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.member-list {
+  max-height: 380px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.member-item {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: var(--transition-smooth);
+}
+
+.member-item:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.col-seat input[type="number"] {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  color: var(--text-main);
+  font-size: 0.9rem;
+  width: 50px;
+  padding: 0.3rem;
+  text-align: center;
+  outline: none;
+  font-family: var(--font-family);
+}
+
+.col-seat input[type="number"]:focus {
+  border-color: var(--primary);
+  background-color: var(--bg-card);
+}
+
+.batch-add-zone {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.col-check input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.col-name input[type="text"] {
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed transparent;
+  color: var(--text-main);
+  font-size: 0.95rem;
+  width: 80%;
+  padding: 0.2rem;
+  transition: var(--transition-smooth);
+}
+
+.col-name input[type="text"]:focus {
+  border-bottom-color: var(--primary);
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.col-action .btn-delete {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: var(--transition-smooth);
+}
+
+.col-action .btn-delete:hover {
+  color: var(--danger);
+  transform: scale(1.1);
+}
+
+/* 削除用チェックボックス */
+.col-action .delete-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--danger);
+}
+
+.btn-danger-active {
+  background-color: var(--danger) !important;
+  color: white !important;
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 10px rgba(255, 23, 68, 0.4);
+}
+
+.summary-box {
+  background-color: rgba(255, 255, 255, 0.02);
+  padding: 0.75rem;
+  border-radius: var(--border-radius-md);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.text-primary {
+  color: var(--secondary);
+  font-weight: 700;
+}
+
+/* Draw Section & Lottery Arena */
+.lottery-arena {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: radial-gradient(circle at center, #1b1a38 0%, var(--bg-secondary) 80%);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Gacha Machine Style */
+.gacha-machine {
+  width: 180px;
+  height: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.gacha-glass {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 4px solid var(--border-color);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 60%, rgba(124, 77, 255, 0.1) 100%);
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 8px 16px rgba(0, 0, 0, 0.5), 0 0 20px rgba(124, 77, 255, 0.2);
+}
+
+.ball-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+/* くじ玉のスタイル */
+.lottery-ball {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff 0%, #888 100%);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  transition: transform 0.5s ease-out;
+}
+
+/* ガチャマシーンレバー */
+.gacha-lever-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.lever-wheel {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: var(--bg-card);
+  border: 3px solid var(--border-color);
+  position: relative;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.lever-handle {
+  width: 8px;
+  height: 24px;
+  background-color: var(--primary);
+  position: absolute;
+  top: -12px;
+  left: 15px;
+  border-radius: 4px;
+  transform-origin: bottom center;
+}
+
+.lever-hint {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+  text-align: center;
+}
+
+/* アニメーション状態 */
+.gacha-spinning .lottery-ball {
+  animation: bounceBall 0.8s infinite ease-in-out alternate;
+}
+
+.gacha-spinning .lever-wheel {
+  transform: rotate(360deg);
+}
+
+@keyframes bounceBall {
+  0% { transform: translateY(0) scale(1) rotate(0deg); }
+  50% { transform: translateY(-80px) translateX(20px) scale(0.9) rotate(180deg); }
+  100% { transform: translateY(-20px) translateX(-30px) scale(1.1) rotate(360deg); }
+}
+
+/* 飛び出すカプセルの演出 */
+.capsule-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(11, 10, 18, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+  transition: opacity 0.3s ease;
+}
+
+.capsule-content {
+  transform: scale(0.1);
+  animation: popupCapsule 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popupCapsule {
+  to { transform: scale(1); }
+}
+
+.capsule-sphere {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px var(--primary-glow);
+}
+
+.capsule-top {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 50%;
+  background: linear-gradient(180deg, var(--primary) 0%, rgba(124, 77, 255, 0.8) 100%);
+  border-radius: 80px 80px 0 0;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  animation: splitTop 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: 0.3s;
+}
+
+.capsule-bottom {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 50%;
+  background: linear-gradient(0deg, var(--secondary) 0%, rgba(0, 229, 255, 0.8) 100%);
+  border-radius: 0 0 80px 80px;
+  border-top: 2px solid rgba(255, 255, 255, 0.2);
+  animation: splitBottom 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: 0.3s;
+}
+
+.capsule-paper {
+  position: absolute;
+  background-color: #ffffff;
+  color: #0b0a12;
+  width: 140px;
+  height: auto;
+  min-height: 90px;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transform: scale(0);
+  animation: showPaper 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation-delay: 0.6s;
+  border-left: 5px solid var(--primary);
+  padding: 0.65rem 0.5rem;
+}
+
+/* フェーズステータスバー */
+.phase-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.phase-step {
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  transition: var(--transition-smooth);
+}
+
+.phase-arrow {
+  color: var(--text-muted);
+}
+
+.phase-1-active .phase-step-1 {
+  background-color: rgba(124, 77, 255, 0.2);
+  color: var(--primary);
+  border: 1px solid rgba(124, 77, 255, 0.4);
+}
+
+.phase-1-active .phase-step-2 {
+  color: var(--text-muted);
+}
+
+.phase-2-active .phase-step-1 {
+  color: var(--text-muted);
+}
+
+.phase-2-active .phase-step-2 {
+  background-color: rgba(0, 229, 255, 0.15);
+  color: var(--secondary);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+}
+
+/* 2回目のシアン演出クラス */
+.lottery-arena.phase-2-theme {
+  background: radial-gradient(circle at center, #0a242c 0%, var(--bg-secondary) 80%);
+  border-color: rgba(0, 229, 255, 0.2);
+}
+
+.lottery-arena.phase-2-theme .gacha-lever-zone .lever-handle {
+  background-color: var(--secondary);
+}
+
+.lottery-arena.phase-2-theme .capsule-top {
+  background: linear-gradient(180deg, var(--secondary) 0%, rgba(0, 229, 255, 0.7) 100%);
+}
+
+.lottery-arena.phase-2-theme .capsule-bottom {
+  background: linear-gradient(0deg, #00b0ff 0%, rgba(0, 176, 255, 0.7) 100%);
+}
+
+.lottery-arena.phase-2-theme .capsule-paper {
+  border-left-color: var(--secondary);
+}
+
+/* フェードアウト時のスタイル */
+.capsule-modal.closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.capsule-modal.closing .capsule-content {
+  transform: scale(0.8);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.draw-number {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 2px;
+}
+
+.draw-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+@keyframes splitTop {
+  to { transform: translateY(-45px) rotate(-10deg); opacity: 0.8; }
+}
+
+@keyframes splitBottom {
+  to { transform: translateY(45px) rotate(10deg); opacity: 0.8; }
+}
+
+@keyframes showPaper {
+  to { transform: scale(1) rotate(-3deg); }
+}
+
+.hidden {
+  display: none !important;
+}
+
+.draw-controls {
+  display: flex;
+  justify-content: center;
+}
+
+/* Results & Audit Log Section */
+.results-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .results-layout {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Results Table */
+.results-table-container {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.results-table th {
+  background-color: var(--bg-card);
+  padding: 0.85rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.results-table td {
+  padding: 0.75rem 0.85rem;
+  font-size: 0.95rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.results-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.results-table tbody tr:first-child {
+  background: linear-gradient(90deg, rgba(124, 77, 255, 0.15) 0%, transparent 100%);
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+/* Audit Log */
+.audit-log-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.audit-log-container h3 {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.audit-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.audit-log-box {
+  background-color: #050508;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 0.85rem;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #00ff66;
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre;
+}
+
+.audit-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Animations */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(124, 77, 255, 0.7); }
+  70% { box-shadow: 0 0 0 12px rgba(124, 77, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(124, 77, 255, 0); }
+}
+
+/* Footer */
+.app-footer {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--border-color);
+}
