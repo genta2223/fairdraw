@@ -376,13 +376,17 @@ function updatePhaseUI() {
       btnStartDraw.textContent = `【${state.phase2Index + 1}番手】${nextMember} 議員が質問順を引く`;
       btnStartDraw.className = 'btn btn-primary btn-lg btn-glow';
       btnAutoDraw.classList.remove('hidden');
+      
+      // まだ引いている途中の場合は非表示を維持
       btnSaveResults.classList.add('hidden');
     } else {
       leverInstructionText.textContent = 'すべての一般質問順序が決定しました！';
       btnStartDraw.textContent = '最初からやり直す';
       btnStartDraw.className = 'btn btn-secondary btn-lg';
       btnAutoDraw.classList.add('hidden');
-      btnSaveResults.classList.remove('hidden'); // 保存ボタンを表示
+      
+      // 全員引き終わっている場合のみ表示
+      btnSaveResults.classList.remove('hidden');
     }
   }
 }
