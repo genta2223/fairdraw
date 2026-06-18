@@ -571,33 +571,11 @@ function setupEventListeners() {
 
       btnStartDraw.disabled = true;
 
-      // 1-1. 議席番号の有無に応じた順番の決定
-      const hasAllSeats = activeMembers.every(m => m.seat !== null && m.seat !== undefined && m.seat !== '');
-      let drawOrderNames = [];
-      let auditLog = null;
-
-      if (hasAllSeats) {
-        // 議席番号順（昇順）で並び替え
-        const sorted = [...activeMembers].sort((a, b) => a.seat - b.seat);
-        drawOrderNames = sorted.map(m => m.name);
-        
-        // 議席番号順は固定確定のため、監査ログにその旨を記述
-        auditLog = {
-          title: '公平な順番決定システム 監査ログ (1回目: 議席順による固定順序決定)',
-          timestamp: new Date().toISOString(),
-          originalParticipants: activeMembers.map(m => `${m.name}(議席:${m.seat})`),
-          shuffledOrder: [...drawOrderNames],
-          randomnessEngine: 'None (Sorted by seat number strictly)',
-          steps: [],
-          verificationCode: btoa(unescape(encodeURIComponent('SeatNumberFixedSelection')))
-        };
-      } else {
-        // 1名でも議席番号設定がない場合は、CSPRNGでランダム順にシャッフル
-        const activeNames = activeMembers.map(m => m.name);
-        const res = fairShuffle(activeNames);
-        drawOrderNames = res.shuffled;
-        auditLog = res.auditLog;
-      }
+      // 1-1. 常に暗号学的乱数（CSPRNG）でランダムにくじを引く順番を決定する
+      const activeNames = activeMembers.map(m => m.name);
+      const res = fairShuffle(activeNames);
+      const drawOrderNames = res.shuffled;
+      const auditLog = res.auditLog;
 
       state.drawOrder = drawOrderNames;
       state.phase1AuditLog = auditLog;
