@@ -110,7 +110,7 @@ let state = {
 // 3. UI 制御 & DOM 操作
 // ==========================================
 
-let memberListContainer, btnAddMember, btnBatchAdd, btnResetMembers, checkAllMembers;
+let memberListContainer, btnAddMember, btnBatchAdd, btnTriggerCsv, inputCsvFile, btnResetMembers, checkAllMembers;
 let totalCountEl, activeCountEl, presetSelect, btnLoadPreset, btnToggleDelete, btnCancelDelete, btnRestartDraw;
 let btnStartDraw, btnAutoDraw, btnSaveResults, resultsPanel, resultsDrawOrderBody, resultsQuestionOrderBody;
 let auditLogText, btnCopyLog, btnDownloadLog;
@@ -122,6 +122,8 @@ function init() {
   memberListContainer = document.getElementById('member-list');
   btnAddMember = document.getElementById('btn-add-member');
   btnBatchAdd = document.getElementById('btn-batch-add');
+  btnTriggerCsv = document.getElementById('btn-trigger-csv');
+  inputCsvFile = document.getElementById('input-csv-file');
   btnToggleDelete = document.getElementById('btn-toggle-delete');
   btnCancelDelete = document.getElementById('btn-cancel-delete');
   btnRestartDraw = document.getElementById('btn-restart-draw');
@@ -266,6 +268,7 @@ function renderMembers() {
     checkAllMembers.disabled = true;
     btnAddMember.disabled = true;
     btnBatchAdd.disabled = true;
+    btnTriggerCsv.disabled = true;
     btnResetMembers.disabled = true;
     btnLoadPreset.disabled = true;
     presetSelect.disabled = true;
@@ -279,6 +282,7 @@ function renderMembers() {
       btnCancelDelete.classList.remove('hidden');
       btnAddMember.disabled = true;
       btnBatchAdd.disabled = true;
+      btnTriggerCsv.disabled = true;
       btnResetMembers.disabled = true;
       btnLoadPreset.disabled = true;
       presetSelect.disabled = true;
@@ -286,6 +290,7 @@ function renderMembers() {
       btnCancelDelete.classList.add('hidden');
       btnAddMember.disabled = false;
       btnBatchAdd.disabled = false;
+      btnTriggerCsv.disabled = false;
       btnResetMembers.disabled = false;
       btnLoadPreset.disabled = false;
       presetSelect.disabled = false;
@@ -455,6 +460,94 @@ function setupEventListeners() {
     renderMembers();
     setupGachaBalls();
     alert(`${names.length}名の議員を一括追加しました。`);
+  });
+
+  // CSV読み込みトリガー
+  btnTriggerCsv.addEventListener('click', () => {
+    if (state.phase1Index > 0 || state.currentPhase === 2) return;
+    inputCsvFile.click();
+  });
+
+  // CSVファイル選択・パース
+  inputCsvFile.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const text = evt.target.result;
+      const lines = text.split(/\r\n|\n/);
+      
+      const parsedMembers = [];
+      let duplicateSeats = [];
+      let seatsUsed = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line === '') continue;
+
+        // カンマ区切りでパース
+        const columns = line.split(',');
+        if (columns.length < 2) {
+          continue;
+        }
+
+        const seatRaw = columns[0].trim();
+        const name = columns[1].trim();
+
+        if (name === '') continue;
+
+        let seat = parseInt(seatRaw, 10);
+        if (isNaN(seat)) {
+          seat = null;
+        }
+
+        if (seat !== null) {
+          if (seatsUsed.includes(seat)) {
+            duplicateSeats.push(seat);
+          } else {
+            seatsUsed.push(seat);
+          }
+        }
+
+        parsedMembers.push({
+          id: `csv-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 4)}`,
+          seat: seat,
+          name: name,
+          active: true
+        });
+      }
+
+      if (parsedMembers.length === 0) {
+        alert('有効な議員データが見つかりませんでした。CSVのフォーマットは「議席番号,氏名」の形式にしてください。');
+        inputCsvFile.value = '';
+        return;
+      }
+
+      if (duplicateSeats.length > 0) {
+        alert(`エラー: CSV内で以下の議席番号が重複しています。\n【議席番号: ${[...new Set(duplicateSeats)].join(', ')}】\nデータを修正してやり直してください。`);
+        inputCsvFile.value = '';
+        return;
+      }
+
+      if (confirm(`CSVから ${parsedMembers.length} 名の議員データを読み込み、現在のリストを上書きしますか？`)) {
+        state.members = parsedMembers;
+        sortMembersBySeat();
+        saveState();
+        renderMembers();
+        setupGachaBalls();
+        alert(`${parsedMembers.length} 名のデータをインポートしました。`);
+      }
+      
+      inputCsvFile.value = '';
+    };
+
+    reader.onerror = function() {
+      alert('ファイルの読み込み中にエラーが発生しました。');
+      inputCsvFile.value = '';
+    };
+
+    reader.readAsText(file, 'UTF-8');
   });
 
   btnLoadPreset.addEventListener('click', () => {
