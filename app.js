@@ -828,6 +828,7 @@ function setupEventListeners() {
       // 結果カプセル
       capsuleModal.classList.remove('hidden');
       capsuleModal.classList.remove('closing');
+      capsuleModal.classList.add('active-animation'); // アニメーションを活性化
       void capsuleModal.offsetWidth; // 強制リフローでiOS Safariでの表示不具合を防止
       capsuleDrawNumber.textContent = `くじを引く順(番手) 決定`;
       capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember.name} 議員</span><br><span style="color:var(--primary); font-size:1.4rem;">【第 ${drawnDrawRank} 番手】</span>`;
@@ -837,6 +838,7 @@ function setupEventListeners() {
       capsuleModal.classList.add('closing');
       await new Promise(resolve => setTimeout(resolve, 200));
       capsuleModal.classList.add('hidden');
+      capsuleModal.classList.remove('active-animation'); // 次回のためにリセット
 
       renderDrawOrderTable();
       setupGachaBalls();
@@ -897,6 +899,7 @@ function setupEventListeners() {
 
       capsuleModal.classList.remove('hidden');
       capsuleModal.classList.remove('closing');
+      capsuleModal.classList.add('active-animation'); // アニメーションを活性化
       void capsuleModal.offsetWidth; // 強制リフロー
       capsuleDrawNumber.textContent = `一般質問順序 確定`;
       capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember} 議員</span><br><span style="color:var(--secondary); font-size:1.4rem;">【第 ${finalRank} 番】</span>`;
@@ -945,6 +948,7 @@ function setupEventListeners() {
 
         capsuleModal.classList.remove('hidden');
         capsuleModal.classList.remove('closing');
+        capsuleModal.classList.add('active-animation'); // アニメーションを活性化
         void capsuleModal.offsetWidth; // 強制リフロー
         capsuleDrawNumber.textContent = `くじを引く順(番手) 決定`;
         capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember.name} 議員</span><br><span style="color:var(--primary); font-size:1.4rem;">【第 ${drawnDrawRank} 番手】</span>`;
@@ -954,6 +958,7 @@ function setupEventListeners() {
         capsuleModal.classList.add('closing');
         await new Promise(resolve => setTimeout(resolve, 200));
         capsuleModal.classList.add('hidden');
+        capsuleModal.classList.remove('active-animation'); // 次回のためにリセット
 
         renderDrawOrderTable();
         setupGachaBalls();
@@ -983,6 +988,7 @@ function setupEventListeners() {
 
         capsuleModal.classList.remove('hidden');
         capsuleModal.classList.remove('closing');
+        capsuleModal.classList.add('active-animation'); // アニメーションを活性化
         void capsuleModal.offsetWidth; // 強制リフロー
         capsuleDrawNumber.textContent = `一般質問順序 確定`;
         capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember} 議員</span><br><span style="color:var(--secondary); font-size:1.4rem;">【第 ${finalRank} 番】</span>`;
@@ -992,6 +998,7 @@ function setupEventListeners() {
         capsuleModal.classList.add('closing');
         await new Promise(resolve => setTimeout(resolve, 200));
         capsuleModal.classList.add('hidden');
+        capsuleModal.classList.remove('active-animation'); // 次回のためにリセット
 
         renderQuestionOrderTable();
         setupGachaBalls();

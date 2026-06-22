@@ -629,8 +629,8 @@ body {
   background: linear-gradient(180deg, var(--primary) 0%, rgba(124, 77, 255, 0.8) 100%);
   border-radius: 80px 80px 0 0;
   border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-  animation: splitTop 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  animation-delay: 0.3s;
+  transform: translateY(0) rotate(0deg);
+  opacity: 1;
 }
 
 .capsule-bottom {
@@ -641,8 +641,8 @@ body {
   background: linear-gradient(0deg, var(--secondary) 0%, rgba(0, 229, 255, 0.8) 100%);
   border-radius: 0 0 80px 80px;
   border-top: 2px solid rgba(255, 255, 255, 0.2);
-  animation: splitBottom 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  animation-delay: 0.3s;
+  transform: translateY(0) rotate(0deg);
+  opacity: 1;
 }
 
 .capsule-paper {
@@ -658,11 +658,25 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transform: scale(0);
-  animation: showPaper 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-  animation-delay: 0.6s;
+  transform: scale(0) rotate(0deg);
   border-left: 5px solid var(--primary);
   padding: 0.65rem 0.5rem;
+}
+
+/* アニメーション活性化時の定義 */
+.capsule-modal.active-animation .capsule-top {
+  animation: splitTop 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: 0.3s;
+}
+
+.capsule-modal.active-animation .capsule-bottom {
+  animation: splitBottom 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: 0.3s;
+}
+
+.capsule-modal.active-animation .capsule-paper {
+  animation: showPaper 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation-delay: 0.6s;
 }
 
 /* フェーズステータスバー */
