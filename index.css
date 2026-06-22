@@ -599,7 +599,6 @@ body {
 .capsule-content {
   transform: scale(0.1) translate3d(0, 0, 0);
   -webkit-transform: scale(0.1) translate3d(0, 0, 0);
-  animation: popupCapsule 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   will-change: transform;
 }
 
@@ -664,6 +663,10 @@ body {
 }
 
 /* アニメーション活性化時の定義 */
+.capsule-modal.active-animation .capsule-content {
+  animation: popupCapsule 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
 .capsule-modal.active-animation .capsule-top {
   animation: splitTop 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   animation-delay: 0.3s;
