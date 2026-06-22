@@ -584,22 +584,28 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(11, 10, 18, 0.9);
+  background-color: rgba(11, 10, 18, 0.93); /* 不透明度を若干上げてiOSバグ時の背景遮蔽力を確保 */
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
+  -webkit-backdrop-filter: blur(8px); /* iOS Safari 対応 */
   backdrop-filter: blur(8px);
   transition: opacity 0.3s ease;
+  transform: translate3d(0, 0, 0); /* iOSでのレンダリングバグ防止 */
+  -webkit-transform: translate3d(0, 0, 0);
 }
 
 .capsule-content {
-  transform: scale(0.1);
+  transform: scale(0.1) translate3d(0, 0, 0);
+  -webkit-transform: scale(0.1) translate3d(0, 0, 0);
   animation: popupCapsule 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  will-change: transform;
 }
 
 @keyframes popupCapsule {
-  to { transform: scale(1); }
+  0% { transform: scale(0.1) translate3d(0, 0, 0); -webkit-transform: scale(0.1) translate3d(0, 0, 0); }
+  100% { transform: scale(1) translate3d(0, 0, 0); -webkit-transform: scale(1) translate3d(0, 0, 0); }
 }
 
 .capsule-sphere {
@@ -611,6 +617,8 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px var(--primary-glow);
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
 }
 
 .capsule-top {
@@ -752,15 +760,18 @@ body {
 }
 
 @keyframes splitTop {
-  to { transform: translateY(-45px) rotate(-10deg); opacity: 0.8; }
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(-45px) rotate(-10deg); opacity: 0.8; }
 }
 
 @keyframes splitBottom {
-  to { transform: translateY(45px) rotate(10deg); opacity: 0.8; }
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(45px) rotate(10deg); opacity: 0.8; }
 }
 
 @keyframes showPaper {
-  to { transform: scale(1) rotate(-3deg); }
+  0% { transform: scale(0) rotate(0deg); }
+  100% { transform: scale(1) rotate(-3deg); }
 }
 
 .hidden {

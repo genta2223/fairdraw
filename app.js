@@ -826,7 +826,8 @@ function setupEventListeners() {
       gachaMachine.classList.remove('gacha-spinning');
 
       // 結果カプセル
-      capsuleModal.className = 'capsule-modal';
+      capsuleModal.classList.remove('hidden');
+      capsuleModal.classList.remove('closing');
       capsuleDrawNumber.textContent = `くじを引く順(番手) 決定`;
       capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember.name} 議員</span><br><span style="color:var(--primary); font-size:1.4rem;">【第 ${drawnDrawRank} 番手】</span>`;
 
@@ -893,7 +894,8 @@ function setupEventListeners() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       gachaMachine.classList.remove('gacha-spinning');
 
-      capsuleModal.className = 'capsule-modal';
+      capsuleModal.classList.remove('hidden');
+      capsuleModal.classList.remove('closing');
       capsuleDrawNumber.textContent = `一般質問順序 確定`;
       capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember} 議員</span><br><span style="color:var(--secondary); font-size:1.4rem;">【第 ${finalRank} 番】</span>`;
 
@@ -939,7 +941,8 @@ function setupEventListeners() {
         await new Promise(resolve => setTimeout(resolve, 900));
         gachaMachine.classList.remove('gacha-spinning');
 
-        capsuleModal.className = 'capsule-modal';
+        capsuleModal.classList.remove('hidden');
+        capsuleModal.classList.remove('closing');
         capsuleDrawNumber.textContent = `くじを引く順(番手) 決定`;
         capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember.name} 議員</span><br><span style="color:var(--primary); font-size:1.4rem;">【第 ${drawnDrawRank} 番手】</span>`;
 
@@ -972,7 +975,8 @@ function setupEventListeners() {
         await new Promise(resolve => setTimeout(resolve, 900));
         gachaMachine.classList.remove('gacha-spinning');
 
-        capsuleModal.className = 'capsule-modal';
+        capsuleModal.classList.remove('hidden');
+        capsuleModal.classList.remove('closing');
         capsuleDrawNumber.textContent = `一般質問順序 確定`;
         capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember} 議員</span><br><span style="color:var(--secondary); font-size:1.4rem;">【第 ${finalRank} 番】</span>`;
 
