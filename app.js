@@ -828,6 +828,7 @@ function setupEventListeners() {
       // 結果カプセル
       capsuleModal.classList.remove('hidden');
       capsuleModal.classList.remove('closing');
+      void capsuleModal.offsetWidth; // 強制リフローでiOS Safariでの表示不具合を防止
       capsuleDrawNumber.textContent = `くじを引く順(番手) 決定`;
       capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember.name} 議員</span><br><span style="color:var(--primary); font-size:1.4rem;">【第 ${drawnDrawRank} 番手】</span>`;
 
@@ -896,6 +897,7 @@ function setupEventListeners() {
 
       capsuleModal.classList.remove('hidden');
       capsuleModal.classList.remove('closing');
+      void capsuleModal.offsetWidth; // 強制リフロー
       capsuleDrawNumber.textContent = `一般質問順序 確定`;
       capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember} 議員</span><br><span style="color:var(--secondary); font-size:1.4rem;">【第 ${finalRank} 番】</span>`;
 
@@ -943,6 +945,7 @@ function setupEventListeners() {
 
         capsuleModal.classList.remove('hidden');
         capsuleModal.classList.remove('closing');
+        void capsuleModal.offsetWidth; // 強制リフロー
         capsuleDrawNumber.textContent = `くじを引く順(番手) 決定`;
         capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember.name} 議員</span><br><span style="color:var(--primary); font-size:1.4rem;">【第 ${drawnDrawRank} 番手】</span>`;
 
@@ -959,6 +962,9 @@ function setupEventListeners() {
         showAuditLogs(); // 1回目自動処理中にリアルタイム出力
         
         resultsPanel.classList.remove('hidden');
+        
+        // 次の抽選演出に移る前に、ブラウザが描画を完了するためのわずかなディレイを追加 (iOSの連続フリーズ対策)
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
     } else if (state.currentPhase === 2) {
       // 2回目の残りを自動で引く
@@ -977,6 +983,7 @@ function setupEventListeners() {
 
         capsuleModal.classList.remove('hidden');
         capsuleModal.classList.remove('closing');
+        void capsuleModal.offsetWidth; // 強制リフロー
         capsuleDrawNumber.textContent = `一般質問順序 確定`;
         capsuleDrawName.innerHTML = `<span style="font-size:0.9rem; color:var(--text-muted);">${currentMember} 議員</span><br><span style="color:var(--secondary); font-size:1.4rem;">【第 ${finalRank} 番】</span>`;
 
@@ -991,6 +998,9 @@ function setupEventListeners() {
         state.phase2Index++;
         updatePhaseUI();
         showAuditLogs(); // 2回目自動処理中にリアルタイム出力
+
+        // 次の抽選演出に移る前に、ブラウザが描画を完了するためのわずかなディレイを追加 (iOSの連続フリーズ対策)
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
       btnSaveResults.classList.remove('hidden'); // 自動引き完了時も保存ボタンを表示
     }
